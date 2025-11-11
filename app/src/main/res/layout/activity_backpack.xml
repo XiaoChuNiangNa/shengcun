@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:background="@color/accent">
+
+
+
+    <!-- 标题栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@color/accent"
+        android:paddingHorizontal="16dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_left"
+            android:background="?selectableItemBackgroundBorderless"
+            android:contentDescription="返回"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:visibility="visible"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="背包"
+            android:gravity="center"
+            android:textSize="18sp"
+            android:textColor="@android:color/black"
+            android:layout_marginStart="16dp"/>
+    </LinearLayout>
+
+    <!-- 移动状态显示 -->
+    <TextView
+        android:id="@+id/tv_moving_state"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:gravity="center"
+        android:textSize="16sp"
+        android:textColor="@android:color/holo_red_dark"
+        android:background="@color/holo_blue_light"
+        android:visibility="gone"
+        android:text="正在移动：" />
+
+    <!-- 物品网格 -->
+    <GridView
+        android:id="@+id/gv_backpack"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:numColumns="4"
+        android:horizontalSpacing="8dp"
+        android:verticalSpacing="8dp"
+        android:padding="8dp"/>
+    <TextView
+        android:id="@+id/tv_backpack_cap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+</LinearLayout>

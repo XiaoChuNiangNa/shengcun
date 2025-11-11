@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 单个科技项的布局：显示科技名称、等级、描述、消耗和升级按钮 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@color/accent"
+    android:layout_marginBottom="8dp">
+
+    <!-- 科技名称 -->
+<TextView
+android:id="@+id/tv_tech_name"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:textSize="18sp"
+android:textStyle="bold"
+android:textColor="@color/primary"/>
+
+    <!-- 科技等级 -->
+<TextView
+android:id="@+id/tv_tech_level"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:textSize="14sp"
+android:textColor="@color/gray_dark"
+android:layout_marginTop="4dp"/>
+
+    <!-- 科技描述 -->
+<TextView
+android:id="@+id/tv_tech_desc"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:textSize="14sp"
+android:textColor="@color/gray"
+android:layout_marginTop="4dp"/>
+
+    <!-- 升级消耗 -->
+<TextView
+android:id="@+id/tv_tech_cost"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:textSize="14sp"
+android:textColor="@color/accent"
+android:layout_marginTop="4dp"/>
+
+    <!-- 升级按钮 -->
+<Button
+android:id="@+id/btn_upgrade"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:text="升级"
+android:layout_marginTop="8dp"
+android:backgroundTint="@color/primary"/>
+
+    </LinearLayout>

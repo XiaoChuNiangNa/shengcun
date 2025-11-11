@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#DDDFFF">
+
+    <!-- 全屏背景（放在最底层） -->
+    <com.example.myapplication3.GameBackgroundView
+        android:id="@+id/backgroundView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+
+
+    <!-- 所有控件容器（叠加在背景上） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <!-- 顶部区域：区域信息和设置图标 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/iv_clock"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_clock"
+                    android:contentDescription="时钟" />
+
+                <TextView
+                    android:id="@+id/tv_time"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="00:00"
+                    android:textSize="14sp"
+                    android:layout_marginLeft="4dp"
+                    android:textColor="@color/accent"/>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_area_info"
+                android:layout_width="229dp"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:shadowColor="#000000"
+                android:shadowRadius="2"
+                android:text="区域信息"
+                android:textColor="@color/accent"
+                android:textSize="20sp" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/iv_thermometer"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_thermometer_normal"
+                    android:contentDescription="体温"/>
+
+                <TextView
+                    android:id="@+id/tv_temperature"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="36°C"
+                    android:textSize="14sp"
+                    android:layout_marginLeft="4dp"/>
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/iv_setting"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
+                android:src="@drawable/ic_setting"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="2dp"
+                android:contentDescription="设置"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_day"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="天数：1"
+            android:textColor="@color/accent"
+            android:textSize="14sp"
+            android:layout_marginBottom="10dp"/>
+        <!-- 生存状态 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tv_life"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="生命：100"
+                android:textColor="@android:color/holo_green_dark"
+                android:textSize="14sp"/>
+
+            <TextView
+                android:id="@+id/tv_hunger"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="饥饿：100"
+                android:textColor="@android:color/holo_orange_dark"
+                android:textSize="14sp"/>
+
+            <TextView
+                android:id="@+id/tv_thirst"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="口渴：100"
+                android:textColor="@android:color/holo_blue_light"
+                android:textSize="14sp"/>
+
+            <TextView
+                android:id="@+id/tv_stamina"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="体力：100"
+                android:textColor="@color/yellow"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+        <!-- 提示信息 -->
+        <TextView
+            android:id="@+id/tv_tip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:maxLines="5"
+            android:ellipsize="end"
+            android:textColor="@android:color/holo_red_dark"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/tv_equip_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="当前装备：无"
+            android:textColor="@color/blue"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp" />
+
+
+        <!-- 空白区域（占位，让方向键靠下） -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"/>
+
+        <ScrollView
+            android:id="@+id/scrollView"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_margin="8dp"
+            android:background="@drawable/transparent_round_bg"
+            android:padding="10dp">
+
+            <TextView
+                android:id="@+id/tv_area_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp"
+                android:shadowColor="#000000"/>
+        </ScrollView>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/btn_up"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="5dp"
+                android:text="上" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_left"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:text="左"/>
+
+                <!-- 采集/传送按钮（放在中间） -->
+                <Button
+                    android:id="@+id/btn_collect"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp"
+                    android:text="探索"/>
+
+                <Button
+                    android:id="@+id/btn_right"
+                    android:layout_width="100dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="右"/>
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_down"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:text="下"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:background="@drawable/transparent_round_bg2">
+
+            <!-- 左侧：背包图标按钮 -->
+            <ImageButton
+                android:id="@+id/btn_backpack"
+                android:layout_width="0dp"
+                android:layout_height="60dp"
+                android:layout_weight="1"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_backpack"
+                android:background="@drawable/btn_selector"
+                android:contentDescription="背包" />
+
+            <!-- 中间：装备图标按钮 -->
+            <ImageButton
+                android:id="@+id/btn_equipment"
+                android:layout_width="0dp"
+                android:layout_height="60dp"
+                android:layout_weight="1"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_equipment"
+                android:background="@drawable/btn_selector"
+                android:contentDescription="装备" />
+
+            <!-- 右侧：功能列表图标按钮 -->
+            <ImageButton
+                android:id="@+id/btn_functions"
+                android:layout_width="0dp"
+                android:layout_height="60dp"
+                android:layout_weight="1"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_functions"
+                android:background="@drawable/btn_selector"
+                android:contentDescription="功能列表" />
+        </LinearLayout>
+    </LinearLayout>
+
+
+</FrameLayout>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    
+    <!-- 蔬菜汤图标 -->
+    <circle
+        cx="50"
+        cy="50"
+        r="40"
+        android:fillColor="#90EE90" />
+    <path
+        android:fillColor="#228B22"
+        android:pathData="M30,40 L40,30 L50,40 L60,30 L70,40 L70,60 L30,60 Z" />
+    
+</vector>

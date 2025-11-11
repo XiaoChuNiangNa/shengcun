@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    
+    <!-- 蛋糕图标 -->
+    <rect
+        android:x="25dp"
+        android:y="40dp"
+        android:width="50dp"
+        android:height="30dp"
+        android:fillColor="#FFB6C1" />
+    <rect
+        android:x="20dp"
+        android:y="30dp"
+        android:width="60dp"
+        android:height="10dp"
+        android:fillColor="#FF69B4" />
+    
+</vector>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    
+    <!-- 面包图标 -->
+    <path
+        android:fillColor="#D2B48C"
+        android:pathData="M20,40 Q50,20 80,40 Q80,80 50,100 Q20,80 20,40 Z" />
+    
+</vector>

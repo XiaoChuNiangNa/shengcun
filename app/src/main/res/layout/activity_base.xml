@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#1E293B"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- 顶部标题栏 -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="40dp">
+
+        <!-- 返回按钮 -->
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:padding="12dp"
+            android:src="@drawable/ic_left"
+            android:background="?selectableItemBackgroundBorderless"
+            android:contentDescription="返回"
+            android:visibility="visible"
+            android:layout_centerVertical="true"
+            android:layout_alignParentStart="true" />
+
+        <!-- 基地标题 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="基地"
+            android:textColor="#FFFFFF"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_centerInParent="true"
+            android:layout_centerVertical="true" />
+
+    </RelativeLayout>
+
+    <!-- 功能按钮布局 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- 第一行：仓库和合成 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="20dp">
+
+            <!-- 仓库按钮 -->
+            <Button
+                android:id="@+id/btn_warehouse"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginEnd="20dp"
+                android:backgroundTint="#1E299B"
+                android:text="仓库"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+            <!-- 合成按钮 -->
+            <Button
+                android:id="@+id/btn_synthesis"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginStart="20dp"
+                android:backgroundTint="#1E299B"
+                android:text="合成"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- 第二行：烹饪和熔炼 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="20dp">
+
+            <!-- 烹饪按钮 -->
+            <Button
+                android:id="@+id/btn_cooking"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginEnd="20dp"
+                android:backgroundTint="#1E299B"
+                android:text="烹饪"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+            <!-- 熔炼按钮 -->
+            <Button
+                android:id="@+id/btn_smelting"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginStart="20dp"
+                android:backgroundTint="#1E299B"
+                android:text="熔炼"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- 第三行：对战和贸易 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <!-- 对战按钮 -->
+            <Button
+                android:id="@+id/btn_battle"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginEnd="20dp"
+                android:backgroundTint="#1E299B"
+                android:text="对战"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+            <!-- 贸易按钮 -->
+            <Button
+                android:id="@+id/btn_trade"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginStart="20dp"
+                android:backgroundTint="#1E299B"
+                android:text="贸易"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:visibility="visible"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

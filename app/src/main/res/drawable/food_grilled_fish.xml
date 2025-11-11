@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    
+    <!-- 烤鱼图标 -->
+    <path
+        android:fillColor="#FFA500"
+        android:pathData="M20,50 Q40,30 60,50 Q80,70 60,90 Q40,110 20,90 Z" />
+    <path
+        android:fillColor="#8B4513"
+        android:pathData="M30,55 L70,55 L70,65 L30,65 Z" />
+    
+</vector>

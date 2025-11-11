@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 装备图片和名称 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <ImageView
+            android:id="@+id/iv_dialog_equip"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:scaleType="fitCenter"/>
+
+        <TextView
+            android:id="@+id/tv_dialog_equip_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:textSize="18sp"
+            android:textStyle="bold"/>
+    </LinearLayout>
+
+    <!-- 装备效果和耐久度 -->
+    <TextView
+        android:id="@+id/tv_dialog_equip_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_gray_round"
+        android:padding="12dp"
+        android:textSize="14sp"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- 操作按钮 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btn_equip_use"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="装备"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btn_equip_remove"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="卸下"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btn_equip_discard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="丢弃"/>
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="难度设置"
+        android:textSize="24sp"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/tv_difficulty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="当前难度：普通"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="24dp">
+
+        <Button
+            android:id="@+id/btn_normal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="简单"
+            android:textSize="18sp"
+            android:layout_marginRight="16dp" />
+
+        <Button
+            android:id="@+id/btn_medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="普通"
+            android:textSize="18sp"
+            android:layout_marginRight="16dp" />
+
+        <Button
+            android:id="@+id/btn_hard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="困难"
+            android:textSize="18sp"
+            android:enabled="false" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_hard_tip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="困难难度暂未开放"
+        android:textSize="16sp"
+        android:textColor="@android:color/darker_gray"
+        android:gravity="center"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btn_save"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="保存设置"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btn_back"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="返回"
+        android:textSize="18sp" />
+</LinearLayout>

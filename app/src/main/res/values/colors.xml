@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 基础颜色 -->
+    <color name="primary_color">#1E299B</color>
+    <color name="background_color">#1E293B</color>
+    <color name="text_primary">#FF4081</color>
+    <color name="text_secondary">#A0AEC0</color>
+    <color name="divider_color">#2D3748</color>
+    <color name="selected_item_color">#2D3748</color>
+    
+    <!-- 缺失的颜色定义 -->
+    <color name="accent">#FF4081</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="gray_dark">#666666</color>
+    
+    <!-- 按钮颜色 -->
+    <color name="skyblue">#87CEEB</color>
+    <color name="blue">#2196F3</color>
+    <color name="green_400">#66BB6A</color>
+    <color name="orange">#FF9800</color>
+    <color name="pink">#E91E63</color>
+    <color name="purple_400">#AB47BC</color>
+    <color name="red">#F44336</color>
+    <color name="yellow">#FFEB3B</color>
+    <color name="primary">#1E299B</color>
+    
+    <!-- 其他颜色 -->
+    <color name="gray">#808080</color>
+    <color name="gray_light">#E0E0E0</color>
+    <color name="background">#F5F5F5</color>
+    
+    <!-- Holo主题颜色 -->
+    <color name="holo_blue_light">#33B5E5</color>
+</resources>

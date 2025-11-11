@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_color">
+
+    <!-- 标题栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/primary_color"
+        android:padding="16dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_back"
+            android:contentDescription="返回" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="个人仓库"
+            android:textSize="20sp"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/tv_warehouse_cap"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="仓库容量：0/200"
+            android:textSize="14sp"
+            android:textColor="@android:color/white"
+            android:gravity="center" />
+    </LinearLayout>
+
+    <!-- 左右分栏布局 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <!-- 左侧：背包 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/bg_panel"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="背包"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="8dp" />
+
+            <ListView
+                android:id="@+id/lv_backpack"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:divider="@color/divider_color"
+                android:dividerHeight="1dp" />
+
+        </LinearLayout>
+
+        <!-- 中间：移动按钮 -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/btn_move_to_warehouse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="→"
+                android:textSize="16sp"
+                android:padding="8dp"
+                android:layout_margin="4dp" />
+
+            <Button
+                android:id="@+id/btn_move_to_backpack"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="←"
+                android:textSize="16sp"
+                android:padding="8dp"
+                android:layout_margin="4dp" />
+
+        </LinearLayout>
+
+        <!-- 右侧：仓库 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/bg_panel"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="仓库"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="8dp" />
+
+            <ListView
+                android:id="@+id/lv_warehouse"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:divider="@color/divider_color"
+                android:dividerHeight="1dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

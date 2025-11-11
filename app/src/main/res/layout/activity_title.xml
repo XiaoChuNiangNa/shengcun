@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#1E293B"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- 顶部：版本号在左上角 -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        
+        <!-- 版本信息在左上角 -->
+        <TextView
+            android:id="@+id/tv_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="版本：1.0.1"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp" />
+            
+        <!-- 设置图标在右上角 -->
+        <ImageButton
+            android:id="@+id/btn_settings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_setting"
+            android:contentDescription="设置"
+            android:padding="8dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="16dp"
+            app:tint="@color/accent"/>
+    </RelativeLayout>
+
+    <!-- 游戏名称居中 -->
+    <TextView
+        android:id="@+id/tv_game_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="幻域生存"
+        android:textColor="#FFFFFF"
+        android:textSize="48sp"
+        android:textStyle="bold"
+        android:layout_marginTop="40dp" />
+
+    <!-- 空白区域（占位） -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="40dp"
+        android:gravity="center">
+    <!-- 开始游戏（圆形，在正中间） -->
+    <Button
+        android:id="@+id/btn_start_game"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:backgroundTint="#FF6B35"
+        android:text="开始游戏"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:elevation="8dp"
+        android:gravity="center"
+        android:background="@drawable/circle_button" />
+    </LinearLayout>
+
+    <!-- 底部五个板块的线性布局 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="40dp"
+        android:gravity="center">
+
+        <!-- 基地（方形） -->
+        <Button
+            android:id="@+id/btn_base"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginEnd="10dp"
+            android:backgroundTint="#1E299B"
+            android:text="基地"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <!-- 研究（方形） -->
+        <Button
+            android:id="@+id/btn_tech_tree"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginEnd="10dp"
+            android:backgroundTint="#1E299B"
+            android:text="研究"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+
+
+        <!-- 图鉴（方形） -->
+        <Button
+            android:id="@+id/btn_illustration"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginStart="10dp"
+            android:backgroundTint="#1E299B"
+            android:text="图鉴"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <!-- 成就（方形） -->
+        <Button
+            android:id="@+id/btn_achievement"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginStart="10dp"
+            android:backgroundTint="#1E299B"
+            android:text="成就"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+    </LinearLayout>
+
+</LinearLayout>

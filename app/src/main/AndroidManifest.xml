@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@drawable/tubiao"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyApplication3">
+        <activity
+            android:name=".BaseActivity"
+            android:exported="false" />
+        <activity
+            android:name=".BaseActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TechTreeActivity"
+            android:exported="false" />
+        <activity
+            android:name=".DifficultyActivity"
+            android:exported="false" />
+        <activity
+            android:name=".LoadingActivity"
+            android:exported="true">
+
+            <!-- 将 intent-filter 移到 activity 标签内部 -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".TitleActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ReincarnationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".RestActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SynthesisActivity"
+            android:exported="false" />
+        <activity
+            android:name=".TradingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SmeltingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CookingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".BuildingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"></activity>
+        <activity
+            android:name=".SettingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".EquipmentActivity"
+            android:exported="false" />
+        <activity
+            android:name=".BackpackActivity"
+            android:exported="false" />
+        <activity
+            android:name=".WarehouseActivity"
+            android:exported="false" />
+        <activity
+            android:name=".BattleActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FunctionListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".IllustrationSelectionActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ResourceIllustrationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ToolIllustrationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FoodIllustrationActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AchievementsActivity"
+            android:exported="false" />
+    </application>
+
+</manifest>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/dialog_bg"
+    android:minWidth="300dp">
+
+    <!-- 标题 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="设置"
+        android:textSize="22sp"
+        android:gravity="center"
+        android:layout_marginBottom="20dp" />
+
+    <!-- 音效开关（保留） -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="24dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="音效开关："
+            android:textSize="18sp" />
+
+        <Switch
+            android:id="@+id/sw_sound"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true" />
+    </LinearLayout>
+
+    <!-- 保存并返回主页按钮 -->
+    <Button
+        android:id="@+id/btn_save_game"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="保存游戏"
+        android:textSize="18sp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- 退出登录按钮 -->
+    <Button
+        android:id="@+id/btn_logout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="退出登录"
+        android:textSize="18sp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- 退出游戏按钮（原第二个退出登录按钮修改） -->
+    <Button
+        android:id="@+id/btn_exit_game"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="退出游戏"
+        android:textSize="18sp" />
+
+</LinearLayout>

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@color/blue">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="难度设置"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:gravity="center"
+        android:layout_marginBottom="20dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="请选择游戏难度："
+        android:textSize="16sp"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 难度选择区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="20dp">
+
+        <!-- 简单难度 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <RadioButton
+                android:id="@+id/rb_easy"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="简单"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:buttonTint="#4CAF50" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="• 资源较少\n• 5天可轮回\n• 生存压力小"
+                android:textSize="14sp"
+                android:textColor="#CCCCCC"
+                android:layout_marginStart="16dp" />
+        </LinearLayout>
+
+        <!-- 普通难度 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <RadioButton
+                android:id="@+id/rb_normal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="普通"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:buttonTint="#2196F3"
+                android:checked="true" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="• 资源适中\n• 10天可轮回\n• 平衡体验"
+                android:textSize="14sp"
+                android:textColor="#CCCCCC"
+                android:layout_marginStart="16dp" />
+        </LinearLayout>
+
+        <!-- 困难难度 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="0dp">
+
+            <RadioButton
+                android:id="@+id/rb_hard"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="困难"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF"
+                android:buttonTint="#F44336" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="• 资源丰富\n• 15天可轮回\n• 生存挑战大"
+                android:textSize="14sp"
+                android:textColor="#CCCCCC"
+                android:layout_marginStart="16dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 按钮区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btn_cancel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="取消"
+            android:textSize="16sp"
+            android:backgroundTint="#666666"
+            android:textColor="#FFFFFF" />
+
+        <Button
+            android:id="@+id/btn_confirm"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="确认"
+            android:textSize="16sp"
+            android:backgroundTint="#1E299B"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+</LinearLayout>

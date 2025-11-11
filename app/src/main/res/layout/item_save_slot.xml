@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:background="@color/white"
+    android:gravity="center_vertical"
+    android:layout_marginBottom="8dp">
+
+    <!-- 存档信息显示 -->
+<TextView
+android:id="@+id/tv_slot_info"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:text="存档位1\n2024-05-01 12:30"
+    android:textSize="16sp"/>
+
+    <!-- 加载按钮 -->
+<Button
+android:id="@+id/btn_load"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="加载"
+    android:layout_marginRight="8dp"/>
+
+    <!-- 删除按钮 -->
+<Button
+    android:id="@+id/btn_delete"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="删除"/>
+
+    </LinearLayout>

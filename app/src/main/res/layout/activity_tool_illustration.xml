@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_color">
+
+    <!-- 顶部导航栏 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/primary_color"
+        android:padding="16dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@android:color/transparent"
+            android:src="@drawable/ic_back"
+            android:contentDescription="返回" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="工具图鉴"
+            android:textSize="20sp"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:gravity="center" />
+    </LinearLayout>
+
+    <!-- 左右分栏布局 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <!-- 左侧：工具列表（占1/3） -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/bg_panel"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="工具列表"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="8dp" />
+
+            <ListView
+                android:id="@+id/lv_tool_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:divider="@color/divider_color"
+                android:dividerHeight="1dp" />
+
+        </LinearLayout>
+
+        <!-- 右侧：工具详情（占2/3） -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2"
+            android:orientation="vertical"
+            android:background="@drawable/bg_panel"
+            android:padding="16dp"
+            android:layout_marginStart="8dp">
+
+            <!-- 工具图片 -->
+            <ImageView
+                android:id="@+id/iv_tool_image"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center_horizontal"
+                android:scaleType="centerCrop"
+                android:background="@drawable/transparent_round_bg"
+                android:layout_marginBottom="16dp" />
+
+            <!-- 工具名称 -->
+            <TextView
+                android:id="@+id/tv_tool_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="工具名称"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="8dp" />
+
+            <!-- 工具描述 -->
+            <TextView
+                android:id="@+id/tv_tool_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="工具描述信息将在这里显示"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="start"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- 工具属性 -->
+            <TextView
+                android:id="@+id/tv_tool_attributes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="属性："
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:gravity="start"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:id="@+id/tv_tool_attributes_details"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="具体属性信息"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:gravity="start"
+                android:lineSpacingExtra="4dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>
