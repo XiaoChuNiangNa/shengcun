@@ -135,12 +135,11 @@ public class BattleSkillManager {
     public static BattleSkill createSkill(SkillType skillType, int level) {
         List<SkillLevel> levels = SKILL_CONFIGS.get(skillType);
         if (levels == null || level < 1 || level > levels.size()) {
-
             return null;
         }
         
         SkillLevel skillLevel = levels.get(level - 1);
-        BattleSkill skill = new BattleSkill(skillType.name, skillLevel.cooldown);
+        BattleSkill skill = new BattleSkill(skillType.getName(), skillLevel.cooldown);
         skill.skillType = skillType;
         skill.level = level;
         skill.description = skillLevel.effect;
@@ -185,7 +184,7 @@ public class BattleSkillManager {
                 if (Math.random() < escapeChance) {
                     if (battleActivity != null) {
                         // 通过公共方法结束战斗
-                        battleActivity.handleBattleEnded(true);
+                        battleActivity.endBattle(true);
                     }
                     result.append(caster.getName()).append(" 成功逃跑！");
                 } else {
@@ -203,7 +202,7 @@ public class BattleSkillManager {
                 if (target != null) {
                     target.takeDamage(chargeDamage);
                     if (battleActivity != null) {
-                        battleActivity.addTotalDamageDealt(chargeDamage);
+                        battleActivity.addDamageDealt(chargeDamage);
                     }
                     result.append(caster.getName()).append(" 使用冲撞对 ").append(target.getName())
                           .append(" 造成 ").append(chargeDamage).append(" 点伤害！");
@@ -338,4 +337,6 @@ public class BattleSkillManager {
         return String.format("%s Lv%d (冷却:%d回合) - %s", 
             skillType.getName(), level, skillLevel.cooldown, skillLevel.effect);
     }
+    
+
 }

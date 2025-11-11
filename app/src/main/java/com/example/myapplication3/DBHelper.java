@@ -104,6 +104,8 @@ public class DBHelper extends SQLiteOpenHelper {
                 "trading_times INTEGER DEFAULT 0," +
                 "reincarnation_times INTEGER DEFAULT 0," +  // 添加轮回次数字段
                 "last_refresh_day INTEGER DEFAULT 1," +
+                "exp INTEGER NOT NULL DEFAULT 0," +  // 新增：经验值字段
+                "level INTEGER NOT NULL DEFAULT 1," +  // 新增：用户等级字段，默认等级为1
                 "is_test_initialized INTEGER NOT NULL DEFAULT 0)");
 
         // 背包表（含耐久字段）
@@ -558,6 +560,16 @@ public class DBHelper extends SQLiteOpenHelper {
             } catch (Exception e) {
                 // 如果列已经存在，忽略错误
                 Log.d("DBHelper", "reincarnation_times列已存在，跳过添加");
+            }
+        }
+
+        if (oldVersion < 28) {
+            // 版本28升级逻辑：添加level列到user_status表
+            try {
+                db.execSQL("ALTER TABLE user_status ADD COLUMN level INTEGER NOT NULL DEFAULT 1");
+            } catch (Exception e) {
+                // 如果列已经存在，忽略错误
+                Log.d("DBHelper", "level列已存在，跳过添加");
             }
         }
 

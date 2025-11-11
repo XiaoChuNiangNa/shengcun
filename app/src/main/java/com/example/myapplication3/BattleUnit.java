@@ -2,6 +2,9 @@ package com.example.myapplication3;
 
 import java.util.Random;
 
+// 导入BattleSkill类
+import com.example.myapplication3.BattleSkill;
+
 /**
  * 战斗单位类
  * 管理角色的生命值、属性、技能等战斗相关数据
@@ -240,6 +243,14 @@ public class BattleUnit {
         return stats.getDefense();
     }
     
+    public int getSpeed() {
+        return stats.getSpeed();
+    }
+    
+    public int getType() {
+        return unitType;
+    }
+    
     // 召唤系统相关方法
     public BattleUnit getMaster() {
         return master;
@@ -284,80 +295,3 @@ public class BattleUnit {
     }
 }
 
-/**
- * 战斗技能类（完整版）
- */
-class BattleSkill {
-    String name;
-    int cooldown;
-    int currentCooldown;
-    int damage;
-    BattleSkillManager.SkillType skillType;
-    int level;
-    String description;
-    
-    BattleSkill(String name, int cooldown) {
-        this.name = name;
-        this.cooldown = cooldown;
-        this.currentCooldown = 0;
-        this.damage = 0;
-    }
-    
-    BattleSkill(String name, int cooldown, int damage) {
-        this.name = name;
-        this.cooldown = cooldown;
-        this.currentCooldown = 0;
-        this.damage = damage;
-    }
-    
-    /**
-     * 检查技能是否可用
-     */
-    public boolean isReady() {
-        return currentCooldown <= 0;
-    }
-    
-    /**
-     * 减少冷却时间
-     */
-    public void reduceCooldown() {
-        if (currentCooldown > 0) {
-            currentCooldown--;
-        }
-    }
-    
-    /**
-     * 获取技能名称
-     */
-    public String getName() {
-        return name;
-    }
-    
-    /**
-     * 获取技能类型
-     */
-    public BattleSkillManager.SkillType getSkillType() {
-        return skillType;
-    }
-    
-    /**
-     * 获取技能等级
-     */
-    public int getLevel() {
-        return level;
-    }
-    
-    /**
-     * 获取技能描述
-     */
-    public String getDescription() {
-        return description;
-    }
-    
-    /**
-     * 获取技能伤害
-     */
-    public int getDamage() {
-        return damage;
-    }
-}

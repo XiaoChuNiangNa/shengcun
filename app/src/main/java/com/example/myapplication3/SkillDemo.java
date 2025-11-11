@@ -1,5 +1,8 @@
 package com.example.myapplication3;
 
+// 导入BattleSkill类
+import com.example.myapplication3.BattleSkill;
+
 /**
  * 技能演示类：展示如何使用新的技能系统
  */

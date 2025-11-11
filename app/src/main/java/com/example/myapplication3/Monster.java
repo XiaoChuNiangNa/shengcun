@@ -4,6 +4,9 @@ import java.util.Random;
 import java.util.ArrayList;
 import java.util.List;
 
+// 导入BattleSkill类
+import com.example.myapplication3.BattleSkill;
+
 /**
  * 怪物数据类
  * 包含怪物属性、技能、掉落物等信息

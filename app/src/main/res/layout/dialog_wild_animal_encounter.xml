@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 动物名称 -->
+    <TextView
+        android:id="@+id/tv_animal_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="遭遇：野兔"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginBottom="8dp" />
+
+    <!-- 动物类型 -->
+    <TextView
+        android:id="@+id/tv_animal_type"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="类型：小型动物"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp" />
+
+    <!-- 动物属性 -->
+    <TextView
+        android:id="@+id/tv_animal_stats"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="属性：生命 20 | 攻击 5 | 防御 0 | 速度 100"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp" />
+
+    <!-- 动物技能 -->
+    <TextView
+        android:id="@+id/tv_animal_skills"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="技能：逃跑"
+        android:textSize="12sp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- 发现地点 -->
+    <TextView
+        android:id="@+id/tv_area_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="发现地点：草原"
+        android:textSize="12sp"
+        android:layout_marginBottom="8dp" />
+
+    <!-- 逃跑成本提示 -->
+    <TextView
+        android:id="@+id/tv_escape_cost"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="逃跑将消耗15点体力，游戏时间增加5小时"
+        android:textSize="12sp"
+        android:textColor="@color/holo_red_dark"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 分隔线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/gray"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 行动说明 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="选择你的行动："
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <!-- 战斗说明 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="• 迎战：进入战斗，胜利获得动物掉落物"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp" />
+
+    <!-- 逃跑说明 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="• 逃跑：消耗体力，时间流逝5小时"
+        android:textSize="12sp"
+        android:layout_marginBottom="16dp" />
+
+</LinearLayout>

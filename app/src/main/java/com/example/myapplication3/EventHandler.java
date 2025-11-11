@@ -214,6 +214,15 @@ public class EventHandler implements View.OnClickListener {
     // 采集处理
     private void handleCollect() {
         String areaType = activity.gameMap.getTerrainType(activity.currentX, activity.currentY);
+        
+        // 检查是否遭遇野生动物（10%概率）
+        WildAnimalEncounterManager encounterManager = WildAnimalEncounterManager.getInstance();
+        if (encounterManager.checkForWildAnimalEncounter()) {
+            Log.d("WildAnimalEncounter", "在" + areaType + "遭遇野生动物");
+            encounterManager.handleWildAnimalEncounter(areaType, activity);
+            return; // 遭遇野生动物后不执行普通采集
+        }
+        
         int currentAreaLevel = Constant.getAreaLevel(areaType);
         TechManager techManager = TechManager.getInstance(activity);
         Tech baseGathering = techManager.getTechById("base_gathering");

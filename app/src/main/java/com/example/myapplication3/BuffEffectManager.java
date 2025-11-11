@@ -2,6 +2,8 @@ package com.example.myapplication3;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import com.example.myapplication3.BattleSkill;
+import com.example.myapplication3.BattleSkill;
 
 /**
  * Buff效果管理器：统一管理战斗中的状态效果

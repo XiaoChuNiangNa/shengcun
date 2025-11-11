@@ -47,6 +47,7 @@ public class GameStateManager {
     public void resetGame() {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putBoolean("game_ended", false);
+        editor.putBoolean("game_started", false); // 重置游戏开始状态
         editor.remove("game_end_time");
         editor.apply();
     }
@@ -71,9 +72,21 @@ public class GameStateManager {
      */
     public boolean isGameStarted() {
         // 游戏开始的判断逻辑：
-        // 1. 游戏未结束
-        // 2. 有有效的用户ID
-        return !isGameEnded() && getCurrentUserId() != -1;
+        // 1. 有明确的游戏开始标志
+        // 2. 游戏未结束
+        // 3. 有有效的用户ID
+        return sharedPreferences.getBoolean("game_started", false) && 
+               !isGameEnded() && 
+               getCurrentUserId() != -1;
+    }
+    
+    /**
+     * 设置游戏开始状态
+     */
+    public void setGameStarted(boolean started) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean("game_started", started);
+        editor.apply();
     }
     
     /**
@@ -96,11 +109,11 @@ public class GameStateManager {
     /**
      * 设置游戏开始状态
      */
-    public void setGameStarted(boolean started) {
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putBoolean("game_started", started);
-        editor.apply();
-    }
+//    public void setGameStarted(boolean started) {
+//        SharedPreferences.Editor editor = sharedPreferences.edit();
+//        editor.putBoolean("game_started", started);
+//        editor.apply();
+//    }
     
     /**
      * 检查指定用户是否在游戏中

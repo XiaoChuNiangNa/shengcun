@@ -130,6 +130,12 @@ public class LoginActivity extends AppCompatActivity {
     // 登录成功处理
     private void handleLoginSuccess(int userId) {
         MyApplication.currentUserId = userId;
+        
+        // 新增：同步游戏状态管理器中的用户ID
+        GameStateManager gameStateManager = GameStateManager.getInstance(this);
+        gameStateManager.setCurrentUserId(userId);
+        // 首次登录时游戏状态为未开始，只有在标题页点击"开始游戏"后才开始
+        gameStateManager.setGameStarted(false);
 
         // 新增：检查是否为测试账号，如果是则初始化特权数据
         boolean isTest = dbHelper.isTestAccount(userId);

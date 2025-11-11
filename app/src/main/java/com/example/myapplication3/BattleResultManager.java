@@ -13,6 +13,7 @@ public class BattleResultManager {
     private Context context;
     private DBHelper dbHelper;
     private SharedPreferences sharedPreferences;
+    private LevelExperienceManager levelExpManager;
     
     // 奖励常量
     private static final int BASE_GOLD_REWARD = 50;
@@ -23,30 +24,47 @@ public class BattleResultManager {
         this.context = context;
         this.dbHelper = DBHelper.getInstance(context);
         this.sharedPreferences = context.getSharedPreferences("battle_stats", Context.MODE_PRIVATE);
+        this.levelExpManager = new LevelExperienceManager(context);
     }
     
     /**
      * 处理战斗胜利结算
      */
-    public void handleVictory(int userId, int battleRounds, boolean isBossBattle) {
-        // 计算奖励
-        int goldReward = calculateGoldReward(battleRounds, isBossBattle);
+    public void handleVictory(int userId, int battleRounds, boolean isBossBattle, Monster defeatedMonster) {
+        // 计算经验奖励
         int expReward = calculateExpReward(battleRounds, isBossBattle);
         
-        // 更新玩家数据
-        updatePlayerResources(userId, goldReward, expReward);
+        // 添加经验值（外置系统，不依赖用户ID）
+        levelExpManager.addExp(expReward);
+        
+        // 处理怪物掉落物
+        String[] drops = defeatedMonster.getRandomDrops();
         
         // 增加游戏时间
         addGameTime(userId, HOURS_PER_BATTLE);
         
-        // 更新战斗统计
-        updateBattleStats(userId, true, goldReward, expReward);
+        // 显示掉落物结果
+        showDropMessage(drops, defeatedMonster.getName(), expReward);
         
-        // 显示结果
-        showVictoryMessage(goldReward, expReward);
+        // 更新玩家背包（如果有背包系统）
+        updatePlayerInventory(userId, drops);
+    }
+    
+    /**
+     * 处理战斗胜利结算（兼容旧版本）
+     */
+    public void handleVictory(int userId, int battleRounds, boolean isBossBattle) {
+        // 计算经验奖励
+        int expReward = calculateExpReward(battleRounds, isBossBattle);
         
-        // 检查升级
-        checkLevelUp(userId);
+        // 添加经验值（外置系统，不依赖用户ID）
+        levelExpManager.addExp(expReward);
+        
+        // 增加游戏时间
+        addGameTime(userId, HOURS_PER_BATTLE);
+        
+        // 显示经验奖励消息
+        showExpRewardMessage(expReward);
     }
     
     /**
@@ -180,44 +198,19 @@ public class BattleResultManager {
     }
     
     /**
-     * 检查升级
+     * 检查升级（旧方法，已废弃，现在使用LevelExperienceManager处理升级）
      */
     private void checkLevelUp(int userId) {
-        int currentExp = dbHelper.getUserExp(userId);
-        int currentLevel = dbHelper.getUserLevel(userId);
-        
-        // 计算升级所需经验（简化公式：每级需要100 * 等级）
-        int expNeeded = currentLevel * 100;
-        
-        if (currentExp >= expNeeded) {
-            // 升级
-            int newLevel = currentLevel + 1;
-            dbHelper.updateUserLevel(userId, newLevel);
-            
-            // 显示升级消息
-            showLevelUpMessage(newLevel);
-            
-            // 升级奖励（每级增加属性）
-            handleLevelUpBonus(userId, newLevel);
-        }
+        // 此方法已废弃，现在使用LevelExperienceManager处理升级
+        // 等级系统已独立为外置系统，不依赖用户ID
     }
     
     /**
-     * 处理升级奖励
+     * 处理升级奖励（旧方法，已废弃，现在使用LevelExperienceManager处理升级奖励）
      */
     private void handleLevelUpBonus(int userId, int newLevel) {
-        // 每级增加属性
-        int attackBonus = newLevel * 2;
-        int defenseBonus = newLevel;
-        int speedBonus = newLevel;
-        
-        // 更新玩家属性（这里需要集成到玩家属性系统中）
-        // 暂时记录到SharedPreferences
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt("level_up_attack_bonus", attackBonus);
-        editor.putInt("level_up_defense_bonus", defenseBonus);
-        editor.putInt("level_up_speed_bonus", speedBonus);
-        editor.apply();
+        // 此方法已废弃，现在使用LevelExperienceManager处理升级奖励
+        // 升级奖励已移至独立的外置等级系统
     }
     
     /**
@@ -263,9 +256,52 @@ public class BattleResultManager {
     /**
      * 显示升级消息
      */
-    private void showLevelUpMessage(int newLevel) {
-        String message = String.format("恭喜！等级提升到 %d 级！", newLevel);
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+    private void showDropMessage(String[] drops, String monsterName, int expReward) {
+        if (drops.length == 0) {
+            // 用\n替换实际换行，避免字符串内直接换行
+            String message = String.format("击败了 %s！\n获得 %d 经验值\n没有获得任何掉落物\n游戏时间 +%d 小时",
+                    monsterName, expReward, HOURS_PER_BATTLE);
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        StringBuilder dropText = new StringBuilder();
+        for (int i = 0; i < drops.length; i++) {
+            if (i > 0) dropText.append(", ");
+            dropText.append(drops[i]);
+        }
+
+        // 同样用\n替换实际换行
+        String message = String.format("击败了 %s！\n获得 %d 经验值\n获得：%s\n游戏时间 +%d 小时",
+                monsterName, expReward, dropText.toString(), HOURS_PER_BATTLE);
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+    }
+
+    /**
+     * 显示经验奖励消息
+     */
+    private void showExpRewardMessage(int expReward) {
+        // 用\n替换实际换行
+        String message = String.format("战斗胜利！\n获得 %d 经验值\n游戏时间 +%d 小时", expReward, HOURS_PER_BATTLE);
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+    }
+
+    /**
+     * 更新玩家背包
+     */
+    private void updatePlayerInventory(int userId, String[] drops) {
+        // 这里需要集成到背包系统中
+        // 暂时记录到SharedPreferences用于显示
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        StringBuilder dropSummary = new StringBuilder();
+        for (String drop : drops) {
+            dropSummary.append(drop).append(";");
+        }
+
+        editor.putString("last_battle_drops", dropSummary.toString());
+        editor.putLong("last_battle_time", System.currentTimeMillis());
+        editor.apply();
     }
     
     /**
@@ -291,6 +327,28 @@ public class BattleResultManager {
         editor.putBoolean("last_battle_boss", result.isBossBattle());
         editor.putInt("last_battle_rounds", result.getBattleRounds());
         editor.putLong("last_battle_time", result.getTimestamp());
+        editor.apply();
+    }
+    
+    /**
+     * 保存战斗结果（带怪物掉落物）
+     */
+    public void saveBattleResult(BattleResult result, Monster defeatedMonster) {
+        // 根据战斗结果处理不同的逻辑
+        if (result.isBattleResult()) {
+            // 胜利处理（带怪物掉落物）
+            handleVictory(result.getUserId(), result.getBattleRounds(), result.isBossBattle(), defeatedMonster);
+        } else {
+            // 失败处理
+            handleDefeat(result.getUserId());
+        }
+        
+        // 保存详细结果到SharedPreferences
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt("last_battle_user_id", result.getUserId());
+        editor.putBoolean("last_battle_result", result.isBattleResult());
+        editor.putString("last_battle_monster", defeatedMonster.getName());
+        editor.putLong("last_battle_time", System.currentTimeMillis());
         editor.apply();
     }
     

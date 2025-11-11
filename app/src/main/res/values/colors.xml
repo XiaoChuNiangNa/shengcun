@@ -32,4 +32,9 @@
     
     <!-- Holo主题颜色 -->
     <color name="holo_blue_light">#33B5E5</color>
+    
+    <!-- 新增缺失的颜色 -->
+    <color name="holo_red_dark">#D32F2F</color>
+    <color name="colorPrimary">#1E299B</color>
+    <color name="colorAccent">#FF4081</color>
 </resources>

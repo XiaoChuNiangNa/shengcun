@@ -4,6 +4,9 @@ import java.util.Random;
 import java.util.ArrayList;
 import java.util.List;
 
+// 导入BattleSkill类
+import com.example.myapplication3.BattleSkill;
+
 /**
  * 怪物管理器
  * 管理所有怪物数据，提供随机怪物生成功能
