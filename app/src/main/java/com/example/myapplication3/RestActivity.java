@@ -1,5 +1,6 @@
 package com.example.myapplication3;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.widget.Button;
@@ -11,7 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RestActivity extends AppCompatActivity {
+public class RestActivity extends BaseActivity {
 
     private DBHelper dbHelper;
     private int userId;
@@ -45,7 +46,15 @@ public class RestActivity extends AppCompatActivity {
         updateRestStatus();
 
         // 按钮点击事件
-        btnBack.setOnClickListener(v -> finish());
+        btnBack.setOnClickListener(v -> {
+            // 检查是否从基地进入，如果是则返回基地
+            if (isFromBase()) {
+                startActivity(new Intent(RestActivity.this, BaseActivity.class));
+                finish();
+            } else {
+                finish();
+            }
+        });
         btnRestLight.setOnClickListener(v -> performRest(RestType.LIGHT));
         btnRestHeavy.setOnClickListener(v -> performRest(RestType.HEAVY));
     }
@@ -329,5 +338,12 @@ public class RestActivity extends AppCompatActivity {
      */
     public void showToast(String message) {
         android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * 检查是否从基地进入
+     */
+    protected boolean isFromBase() {
+        return getIntent().getBooleanExtra("from_base", false);
     }
 }

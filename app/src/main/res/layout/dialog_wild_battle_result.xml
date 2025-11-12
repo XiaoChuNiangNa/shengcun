@@ -27,6 +27,17 @@
         android:textSize="16sp"
         android:textColor="@android:color/black"
         android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <!-- 等级经验信息 -->
+    <TextView
+        android:id="@+id/tv_level_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="等级: 1 - 经验: 0/500 (0.0%)"
+        android:textSize="14sp"
+        android:textColor="@color/colorPrimary"
+        android:gravity="center"
         android:layout_marginBottom="16dp" />
 
     <!-- 分割线 -->
@@ -40,7 +51,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="奖励信息"
+        android:text="详细奖励"
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="@color/colorPrimary"
@@ -51,7 +62,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:maxHeight="200dp">
+        android:maxHeight="250dp">
 
         <TextView
             android:id="@+id/tv_rewards"
@@ -63,6 +74,17 @@
             android:lineSpacingExtra="4dp" />
 
     </ScrollView>
+
+    <!-- 日志信息 -->
+    <TextView
+        android:id="@+id/tv_log"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="战斗日志："
+        android:textSize="12sp"
+        android:textColor="@color/gray"
+        android:gravity="start"
+        android:layout_marginBottom="16dp" />
 
     <!-- 确认按钮 -->
     <Button

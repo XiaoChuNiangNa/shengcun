@@ -81,6 +81,11 @@ public class DataManager {
                 // 直接调用重置方法，确保所有状态都正确重置
                 DataManager dataManager = new DataManager(activity);
                 dataManager.resetGameData(MyApplication.currentUserId);
+                
+                // 同时重置游戏状态管理器，确保游戏状态一致
+                GameStateManager gameStateManager = GameStateManager.getInstance(activity);
+                gameStateManager.resetGame();
+                Log.i("DataManager", "游戏状态管理器已重置");
             } else {
                 activity.life = lifeFromDB;
             }

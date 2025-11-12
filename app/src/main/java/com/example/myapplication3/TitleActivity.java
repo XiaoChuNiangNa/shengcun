@@ -113,7 +113,7 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
                 MyApplication.currentUserId = currentUserId;
                 startActivity(new Intent(TitleActivity.this, TechTreeActivity.class));
             } else {
-                Toast.makeText(this, "请先登录再查看科技树", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "请先登录再查看科技树", Toast.LENGTH_LONG).show();
                 startActivity(new Intent(TitleActivity.this, LoginActivity.class));
             }
         } else if (v.getId() == R.id.btn_base) {
@@ -128,7 +128,7 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
                 MyApplication.currentUserId = currentUserId;
                 startActivity(new Intent(TitleActivity.this, BaseActivity.class));
             } else {
-                Toast.makeText(this, "请先登录再进入基地", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "请先登录再进入基地", Toast.LENGTH_LONG).show();
                 startActivity(new Intent(TitleActivity.this, LoginActivity.class));
             }
         } else if (v.getId() == R.id.btn_illustration) {
@@ -144,7 +144,7 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
                 // 跳转到选择图鉴页面
                 startActivity(new Intent(TitleActivity.this, IllustrationSelectionActivity.class));
             } else {
-                Toast.makeText(this, "请先登录再查看图鉴", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "请先登录再查看图鉴", Toast.LENGTH_LONG).show();
                 startActivity(new Intent(TitleActivity.this, LoginActivity.class));
             }
         } else if (v.getId() == R.id.btn_achievement) {
@@ -160,7 +160,7 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
                 // 跳转到成就页面
                 startActivity(new Intent(TitleActivity.this, AchievementsActivity.class));
             } else {
-                Toast.makeText(this, "请先登录再查看成就", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "请先登录再查看成就", Toast.LENGTH_LONG).show();
                 startActivity(new Intent(TitleActivity.this, LoginActivity.class));
             }
         } else if (v.getId() == R.id.btn_settings) {

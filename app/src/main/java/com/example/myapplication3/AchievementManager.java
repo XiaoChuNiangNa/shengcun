@@ -22,6 +22,7 @@ public class AchievementManager {
     public static final String CATEGORY_SMELTING = "smelting";
     public static final String CATEGORY_TRADING = "trading";
     public static final String CATEGORY_REINCARNATION = "reincarnation";
+    public static final String CATEGORY_SURVIVAL = "survival"; // 生存之路
     
     private AchievementManager(DBHelper dbHelper) {
         this.dbHelper = dbHelper;
@@ -146,6 +147,18 @@ public class AchievementManager {
         achievements.add(new AchievementItem("", "", "", CATEGORY_REINCARNATION, "史诗轮回者", 8, 50000, 80));
         achievements.add(new AchievementItem("", "", "", CATEGORY_REINCARNATION, "神话轮回者", 9, 100000, 90));
         
+        // 生存之路成就
+        achievements.add(new AchievementItem("", "", "", CATEGORY_SURVIVAL, "生存之路 Lv1", 1, 1, 10)); // 首次简单模式成功轮回
+        achievements.add(new AchievementItem("", "", "", CATEGORY_SURVIVAL, "生存之路 Lv2", 2, 1, 20)); // 首次普通模式成功轮回
+        achievements.add(new AchievementItem("", "", "", CATEGORY_SURVIVAL, "生存之路 Lv3", 3, 1, 30)); // 首次困难模式成功轮回
+        achievements.add(new AchievementItem("", "", "", CATEGORY_SURVIVAL, "生存之路 Lv4", 4, 100, 40)); // 简单模式最高生存100天
+        achievements.add(new AchievementItem("", "", "", CATEGORY_SURVIVAL, "生存之路 Lv5", 5, 100, 50)); // 普通模式最高生存100天
+        achievements.add(new AchievementItem("", "", "", CATEGORY_SURVIVAL, "生存之路 Lv6", 6, 100, 60)); // 困难模式最高生存100天
+        achievements.add(new AchievementItem("", "", "", CATEGORY_SURVIVAL, "生存之路 Lv7", 7, 500, 70)); // 简单模式最高生存500天
+        achievements.add(new AchievementItem("", "", "", CATEGORY_SURVIVAL, "生存之路 Lv8", 8, 500, 80)); // 普通模式最高生存500天
+        achievements.add(new AchievementItem("", "", "", CATEGORY_SURVIVAL, "生存之路 Lv9", 9, 500, 90)); // 困难模式最高生存500天
+        achievements.add(new AchievementItem("", "", "", CATEGORY_SURVIVAL, "生存之路 Lv10", 10, 1000, 100)); // 困难模式最高生存1000天
+        
         return achievements;
     }
     
@@ -243,6 +256,7 @@ public class AchievementManager {
         updateSmeltingProgress(userId, userStats, db);
         updateTradingProgress(userId, userStats, db);
         updateReincarnationProgress(userId, userStats, db);
+        updateSurvivalProgress(userId, userStats, db);
         
         Log.d("AchievementManager", "轮回后成就进度计算完成");
     }
@@ -254,7 +268,7 @@ public class AchievementManager {
         
         // 获取用户状态数据
         Cursor cursor = db.query("user_status", 
-                new String[]{"global_collect_times", "exploration_times", "synthesis_times", "smelting_times", "trading_times", "gold", "game_day"}, 
+                new String[]{"global_collect_times", "exploration_times", "synthesis_times", "smelting_times", "trading_times", "gold", "game_day", "is_easy_cleared", "is_normal_cleared", "is_hard_cleared", "difficulty"}, 
                 "user_id=?", new String[]{String.valueOf(userId)}, null, null, null);
         
         if (cursor.moveToFirst()) {
@@ -265,6 +279,10 @@ public class AchievementManager {
             stats.put("trading_times", cursor.getInt(cursor.getColumnIndexOrThrow("trading_times")));
             stats.put("gold", cursor.getInt(cursor.getColumnIndexOrThrow("gold")));
             stats.put("game_day", cursor.getInt(cursor.getColumnIndexOrThrow("game_day")));
+            stats.put("is_easy_cleared", cursor.getInt(cursor.getColumnIndexOrThrow("is_easy_cleared")));
+            stats.put("is_normal_cleared", cursor.getInt(cursor.getColumnIndexOrThrow("is_normal_cleared")));
+            stats.put("is_hard_cleared", cursor.getInt(cursor.getColumnIndexOrThrow("is_hard_cleared")));
+            // 难度字段存储为字符串，不放入Integer类型的Map中
         }
         cursor.close();
         
@@ -512,6 +530,20 @@ public class AchievementManager {
                 return level; // Lv1:1, Lv2:2, ..., Lv8:8
             case "cooking":
                 return level * 5; // Lv1:5, Lv2:10, ..., Lv5:25
+            case "survival":
+                switch (level) {
+                    case 1: return 1;  // Lv1: 首次简单模式成功轮回
+                    case 2: return 1;  // Lv2: 首次普通模式成功轮回
+                    case 3: return 1;  // Lv3: 首次困难模式成功轮回
+                    case 4: return 100; // Lv4: 简单模式最高生存100天
+                    case 5: return 100; // Lv5: 普通模式最高生存100天
+                    case 6: return 100; // Lv6: 困难模式最高生存100天
+                    case 7: return 500; // Lv7: 简单模式最高生存500天
+                    case 8: return 500; // Lv8: 普通模式最高生存500天
+                    case 9: return 500; // Lv9: 困难模式最高生存500天
+                    case 10: return 1000; // Lv10: 困难模式最高生存1000天
+                    default: return 0;
+                }
             default:
                 return 0;
         }
@@ -520,5 +552,110 @@ public class AchievementManager {
     // 获取成就奖励点数
     private int getAchievementReward(int level) {
         return level * 10; // Lv1:10, Lv2:20, ..., Lv10:100
+    }
+    
+    // 更新生存之路成就进度
+    private void updateSurvivalProgress(int userId, Map<String, Integer> stats, SQLiteDatabase db) {
+        int isEasyCleared = stats.getOrDefault("is_easy_cleared", 0);
+        int isNormalCleared = stats.getOrDefault("is_normal_cleared", 0);
+        int isHardCleared = stats.getOrDefault("is_hard_cleared", 0);
+        int gameDay = stats.getOrDefault("game_day", 0);
+        String difficulty = "normal"; // 默认难度
+        if (stats.containsKey("difficulty")) {
+            difficulty = String.valueOf(stats.get("difficulty"));
+        }
+        
+        Log.d("AchievementManager", "生存之路成就计算 - 游戏天数: " + gameDay + ", 难度: " + difficulty);
+        Log.d("AchievementManager", "通关状态 - 简单: " + isEasyCleared + ", 普通: " + isNormalCleared + ", 困难: " + isHardCleared);
+        
+        // 生存之路 Lv1-Lv3: 首次通关不同难度
+        // Lv1: 首次简单模式成功轮回
+        if (isEasyCleared > 0) {
+            updateAchievementProgress(userId, CATEGORY_SURVIVAL, 1, 1); // 成就1完成
+        }
+        
+        // Lv2: 首次普通模式成功轮回
+        if (isNormalCleared > 0) {
+            updateAchievementProgress(userId, CATEGORY_SURVIVAL, 2, 1); // 成就2完成
+        }
+        
+        // Lv3: 首次困难模式成功轮回
+        if (isHardCleared > 0) {
+            updateAchievementProgress(userId, CATEGORY_SURVIVAL, 3, 1); // 成就3完成
+        }
+        
+        // 生存之路 Lv4-Lv10: 最高生存天数
+        // 根据当前难度和生存天数来更新对应成就
+        if ("Easy".equals(difficulty) || "简单".equals(difficulty)) {
+            // 简单模式
+            if (gameDay >= 100) {
+                updateAchievementProgress(userId, CATEGORY_SURVIVAL, 4, gameDay); // Lv4: 简单模式最高生存100天
+            }
+            if (gameDay >= 500) {
+                updateAchievementProgress(userId, CATEGORY_SURVIVAL, 7, gameDay); // Lv7: 简单模式最高生存500天
+            }
+        } else if ("Normal".equals(difficulty) || "普通".equals(difficulty)) {
+            // 普通模式
+            if (gameDay >= 100) {
+                updateAchievementProgress(userId, CATEGORY_SURVIVAL, 5, gameDay); // Lv5: 普通模式最高生存100天
+            }
+            if (gameDay >= 500) {
+                updateAchievementProgress(userId, CATEGORY_SURVIVAL, 8, gameDay); // Lv8: 普通模式最高生存500天
+            }
+        } else if ("Hard".equals(difficulty) || "困难".equals(difficulty)) {
+            // 困难模式
+            if (gameDay >= 100) {
+                updateAchievementProgress(userId, CATEGORY_SURVIVAL, 6, gameDay); // Lv6: 困难模式最高生存100天
+            }
+            if (gameDay >= 500) {
+                updateAchievementProgress(userId, CATEGORY_SURVIVAL, 9, gameDay); // Lv9: 困难模式最高生存500天
+            }
+            if (gameDay >= 1000) {
+                updateAchievementProgress(userId, CATEGORY_SURVIVAL, 10, gameDay); // Lv10: 困难模式最高生存1000天
+            }
+        }
+        
+        Log.d("AchievementManager", "生存之路成就进度更新完成");
+    }
+    
+    // 重载方法：更新特定成就的进度
+    private void updateAchievementProgress(int userId, String category, int level, int currentProgress) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        
+        try {
+            // 查询当前成就的进度
+            Cursor cursor = db.query("achievements", 
+                    new String[]{"progress", "is_completed"}, 
+                    "user_id = ? AND category = ? AND level = ?", 
+                    new String[]{String.valueOf(userId), category, String.valueOf(level)}, 
+                    null, null, null);
+            
+            if (cursor.moveToFirst()) {
+                int existingProgress = cursor.getInt(cursor.getColumnIndexOrThrow("progress"));
+                int isCompleted = cursor.getInt(cursor.getColumnIndexOrThrow("is_completed"));
+                
+                // 如果成就未完成，且当前进度大于已有进度，则更新
+                if (isCompleted == 0 && currentProgress > existingProgress) {
+                    ContentValues values = new ContentValues();
+                    values.put("progress", currentProgress);
+                    
+                    // 获取成就的完成条件
+                    int targetValue = getAchievementTarget(category, level);
+                    if (currentProgress >= targetValue) {
+                        values.put("is_completed", 1);
+                        Log.d("AchievementManager", "成就完成: " + category + " Lv" + level);
+                    }
+                    
+                    db.update("achievements", values, 
+                            "user_id = ? AND category = ? AND level = ?", 
+                            new String[]{String.valueOf(userId), category, String.valueOf(level)});
+                    
+                    Log.d("AchievementManager", "更新成就进度: " + category + " Lv" + level + " -> " + currentProgress);
+                }
+            }
+            cursor.close();
+        } catch (Exception e) {
+            Log.e("AchievementManager", "更新特定成就进度失败", e);
+        }
     }
 }

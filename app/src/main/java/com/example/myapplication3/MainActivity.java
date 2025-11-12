@@ -76,19 +76,35 @@ public class MainActivity extends BaseActivity {
             return;
         }
 
-        // 添加游戏状态检测日志
+        // 先检查死亡状态，如果死亡则重置游戏状态
+        DataManager tempDataManager = new DataManager(this);
+        Map<String, Object> userStatus = tempDataManager.getDbHelper().getUserStatus(MyApplication.currentUserId);
+        int lifeFromDB = userStatus != null && userStatus.containsKey("life") ? (int) userStatus.get("life") : Constant.INIT_LIFE;
+        
+        // 如果生命值为0（死亡状态），自动重置游戏状态
+        if (lifeFromDB <= 0) {
+            Log.i("MainActivity", "检测到死亡状态，重置游戏状态");
+            
+            // 重置游戏数据
+            tempDataManager.resetGameData(MyApplication.currentUserId);
+            
+            // 重置游戏状态管理器
+            GameStateManager gameStateManager = GameStateManager.getInstance(this);
+            gameStateManager.resetGame();
+            
+            // 设置游戏开始状态为true，允许重新开始游戏
+            gameStateManager.setGameStarted(true);
+            gameStateManager.setCurrentUserId(MyApplication.currentUserId);
+            
+            Log.i("MainActivity", "死亡状态处理完成，游戏状态已重置");
+        }
+        
+        // 然后验证游戏状态一致性
         GameStateManager gameStateManager = GameStateManager.getInstance(this);
         boolean isGameStarted = gameStateManager.isGameStarted();
         int currentUserId = gameStateManager.getCurrentUserId();
         
-        android.util.Log.i("GameState", "MainActivity - 游戏状态检测:");
-        android.util.Log.i("GameState", "  isGameStarted: " + isGameStarted);
-        android.util.Log.i("GameState", "  currentUserId: " + currentUserId);
-        android.util.Log.i("GameState", "  MyApplication.currentUserId: " + MyApplication.currentUserId);
-        
-        // 验证游戏状态一致性
         if (!isGameStarted || currentUserId != MyApplication.currentUserId) {
-            android.util.Log.w("GameState", "游戏状态不一致，强制返回标题页");
             Toast.makeText(this, "游戏状态异常，返回标题页", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, TitleActivity.class));
             finish();
@@ -101,7 +117,7 @@ public class MainActivity extends BaseActivity {
         dataManager = new DataManager(this);
         
         // 检查是否处于死亡状态，如果是则自动重置游戏
-        Map<String, Object> userStatus = dataManager.getDbHelper().getUserStatus(currentUserId);
+        Map<String, Object> currentUserStatus = dataManager.getDbHelper().getUserStatus(currentUserId);
         uiUpdater = new UIUpdater(this);
         eventHandler = new EventHandler(this);
         timeManager = new TimeManager(this);
@@ -161,14 +177,20 @@ public class MainActivity extends BaseActivity {
         super.onResume();
         timeManager.handleOnResume();
         
-        // 重新加载装备状态（从装备页面返回时更新）
-        reloadEquipStatus();
+        // 延迟加载装备状态（从装备页面返回时更新）
+        handler.postDelayed(() -> {
+            reloadEquipStatus();
+        }, 100);
         
-        // 重新加载用户状态（从背包页面返回时更新）
-        reloadUserStatus();
+        // 延迟加载用户状态（从背包页面返回时更新）
+        handler.postDelayed(() -> {
+            reloadUserStatus();
+        }, 150);
         
-        // 更新采集按钮文本
-        eventHandler.updateCollectButtonText();
+        // 延迟更新采集按钮文本
+        handler.postDelayed(() -> {
+            eventHandler.updateCollectButtonText();
+        }, 200);
     }
     
     /**
@@ -407,12 +429,12 @@ public class MainActivity extends BaseActivity {
         // 重置游戏数据
         dataManager.resetGameData(currentUserId);
         
-        // 设置游戏结束状态
+        // 重置游戏状态管理器，确保可以重新开始游戏
         GameStateManager gameStateManager = GameStateManager.getInstance(this);
-        gameStateManager.setGameEnded();
+        gameStateManager.resetGame();
         
-        Log.i("GameOver", "游戏重置完成，设置游戏结束状态，返回标题页");
-        Log.i("GameState", "MainActivity - 重置游戏，设置游戏结束状态");
+        Log.i("GameOver", "游戏重置完成，游戏状态已重置，返回标题页");
+        Log.i("GameState", "MainActivity - 重置游戏，游戏状态管理器已重置");
         
         // 返回标题页
         Intent intent = new Intent(this, TitleActivity.class);

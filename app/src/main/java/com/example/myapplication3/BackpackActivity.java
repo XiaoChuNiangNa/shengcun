@@ -120,21 +120,14 @@ public class BackpackActivity extends AppCompatActivity {
         ImageView ivItem = dialogView.findViewById(R.id.iv_dialog_item);
         TextView tvName = dialogView.findViewById(R.id.tv_dialog_name);
         TextView tvEffect = dialogView.findViewById(R.id.tv_dialog_effect);
-        Button btnMove = dialogView.findViewById(R.id.btn_move);
         Button btnUse = dialogView.findViewById(R.id.btn_use);
+        Button btnMove = dialogView.findViewById(R.id.btn_move);
         Button btnDiscard = dialogView.findViewById(R.id.btn_discard);
 
         // 检查控件是否初始化成功
-        if (ivItem == null || tvName == null || tvEffect == null || btnMove == null || btnUse == null || btnDiscard == null) {
+        if (ivItem == null || tvName == null || tvEffect == null || btnUse == null || btnMove == null || btnDiscard == null) {
             Log.e(TAG, "弹窗控件初始化失败");
             return;
-        }
-
-        // 设置移动按钮文本（显示当前移动的物品名称）
-        if (isMovingItem) {
-            btnMove.setText("移动 " + movingItemName);
-        } else {
-            btnMove.setText("移动");
         }
 
         // 设置物品图片
@@ -155,13 +148,7 @@ public class BackpackActivity extends AppCompatActivity {
 
         // 移动按钮点击事件
         btnMove.setOnClickListener(v -> {
-            if (isMovingItem) {
-                // 如果已经在移动状态，则执行移动操作
-                moveItemToPosition(itemName);
-            } else {
-                // 如果不在移动状态，则进入移动状态
-                startMovingItem(itemName, count);
-            }
+            startMovingItem(itemName, count);
             dialog.dismiss();
         });
 
@@ -366,46 +353,86 @@ public class BackpackActivity extends AppCompatActivity {
         // 显示移动状态
         updateMovingStateDisplay();
         
-        Toast.makeText(this, "开始移动物品：" + itemName, Toast.LENGTH_SHORT).show();
+        // 修改网格点击事件为移动模式
+        gvBackpack.setOnItemClickListener((parent, view, position, id) -> {
+            if (itemList == null || position >= itemList.size()) {
+                Log.d(TAG, "点击位置无效：" + position);
+                return;
+            }
+            
+            Map.Entry<String, Integer> targetItem = itemList.get(position);
+            String targetItemName = targetItem.getKey();
+            
+            // 移动物品到目标位置
+            moveItemToPosition(targetItemName);
+        });
+        
+        Toast.makeText(this, "开始移动物品：" + itemName + "，请点击目标位置", Toast.LENGTH_LONG).show();
         Log.d(TAG, "开始移动物品：" + itemName + "，数量：" + count);
     }
 
     /**
      * 移动物品到指定位置
+     * 不同物品之间转移：相互调换位置和数量
+     * 相同物品转移：叠加数量
      */
     public void moveItemToPosition(String targetItemName) {
         if (!isMovingItem) {
-            Toast.makeText(this, "请先选择要移动的物品", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "请先选择要移动的物品", Toast.LENGTH_LONG).show();
             return;
         }
 
+        // 相同物品转移：叠加数量
         if (movingItemName.equals(targetItemName)) {
-            Toast.makeText(this, "不能移动物品到同一位置", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // 执行移动逻辑：将movingItemName的所有物品移动到targetItemName的位置
-        try {
-            // 获取目标物品当前数量
-            int targetCount = dbHelper.getBackpackItemCount(MyApplication.currentUserId, targetItemName);
-            
-            // 如果目标物品不存在，则创建新的物品项
-            if (targetCount == 0) {
-                dbHelper.addBackpackItem(MyApplication.currentUserId, targetItemName, movingItemCount);
-            } else {
-                // 目标物品存在，则合并数量
+            try {
+                // 获取目标物品当前数量
+                int targetCount = dbHelper.getBackpackItemCount(MyApplication.currentUserId, targetItemName);
+                // 叠加数量
                 dbHelper.updateBackpackItem(MyApplication.currentUserId, targetItemName, movingItemCount);
+                // 删除原物品（原位置已经叠加到目标位置）
+                dbHelper.deleteBackpackItem(MyApplication.currentUserId, movingItemName);
+                
+                Toast.makeText(this, "成功叠加物品：" + movingItemName + " ×" + movingItemCount, Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "叠加物品完成：" + movingItemName + " 数量：" + movingItemCount);
+                
+            } catch (Exception e) {
+                Log.e(TAG, "叠加物品失败：", e);
+                Toast.makeText(this, "叠加物品失败", Toast.LENGTH_LONG).show();
             }
-            
-            // 删除原物品
-            dbHelper.deleteBackpackItem(MyApplication.currentUserId, movingItemName);
-            
-            Toast.makeText(this, "成功移动物品：" + movingItemName + " -> " + targetItemName, Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "移动物品完成：" + movingItemName + " -> " + targetItemName);
-            
-        } catch (Exception e) {
-            Log.e(TAG, "移动物品失败：", e);
-            Toast.makeText(this, "移动物品失败", Toast.LENGTH_SHORT).show();
+        } 
+        // 不同物品转移：相互调换位置
+        else {
+            try {
+                // 获取目标物品当前数量
+                int targetCount = dbHelper.getBackpackItemCount(MyApplication.currentUserId, targetItemName);
+                
+                // 保存目标物品信息
+                String tempItemName = movingItemName;
+                int tempItemCount = movingItemCount;
+                
+                // 交换物品：将源物品替换为目标物品
+                if (targetCount > 0) {
+                    // 删除源物品
+                    dbHelper.deleteBackpackItem(MyApplication.currentUserId, movingItemName);
+                    // 添加目标物品到源位置
+                    dbHelper.addBackpackItem(MyApplication.currentUserId, tempItemName, targetCount);
+                    // 删除原目标物品
+                    dbHelper.deleteBackpackItem(MyApplication.currentUserId, targetItemName);
+                    // 添加源物品到目标位置
+                    dbHelper.addBackpackItem(MyApplication.currentUserId, targetItemName, tempItemCount);
+                } else {
+                    // 如果目标位置为空，直接移动物品
+                    dbHelper.addBackpackItem(MyApplication.currentUserId, targetItemName, movingItemCount);
+                    dbHelper.deleteBackpackItem(MyApplication.currentUserId, movingItemName);
+                }
+                
+                Toast.makeText(this, "成功交换物品：" + movingItemName + " ↔ " + targetItemName, Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "交换物品完成：" + movingItemName + " ↔ " + targetItemName);
+                
+            } catch (Exception e) {
+                Log.e(TAG, "交换物品失败：", e);
+                Toast.makeText(this, "交换物品失败", Toast.LENGTH_LONG).show();
+            }
         }
         
         // 取消移动状态并刷新界面
@@ -421,6 +448,19 @@ public class BackpackActivity extends AppCompatActivity {
             isMovingItem = false;
             movingItemName = "";
             movingItemCount = 0;
+            
+            // 恢复正常的网格点击事件
+            gvBackpack.setOnItemClickListener((parent, view, position, id) -> {
+                if (itemList == null || position >= itemList.size()) {
+                    Log.d(TAG, "点击位置无效：" + position);
+                    return;
+                }
+                Map.Entry<String, Integer> item = itemList.get(position);
+                String itemName = item.getKey();
+                int count = item.getValue();
+                Log.d(TAG, "点击物品：" + itemName + "，数量：" + count);
+                showItemActionDialog(itemName, count);
+            });
             
             // 隐藏移动状态显示
             tvMovingState.setVisibility(View.GONE);

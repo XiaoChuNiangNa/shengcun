@@ -92,91 +92,135 @@
             android:layout_weight="1"
             android:orientation="horizontal"
             android:gravity="center"
-            android:padding="10dp">
+            android:padding="8dp">
 
-            <!-- 敌方单位（1v1） -->
+            <!-- 敌方单位位置1 -->
             <FrameLayout
-                android:id="@+id/enemy_card"
-                android:layout_width="180dp"
-                android:layout_height="200dp"
-                android:layout_margin="16dp"
-                android:background="@drawable/enemy_card_bg_boss">
+                android:id="@+id/enemy_card_1"
+                android:layout_width="100dp"
+                android:layout_height="160dp"
+                android:layout_margin="4dp"
+                android:background="@drawable/enemy_card_bg_boss"
+                android:visibility="gone">
 
                 <!-- 单位名称 -->
                 <TextView
-                    android:id="@+id/enemy_name"
+                    android:id="@+id/enemy_name_1"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="30dp"
                     android:background="#9E9E9E"
-                    android:text="森林守护者"
+                    android:text=""
                     android:textColor="#000000"
-                    android:textSize="16sp"
+                    android:textSize="12sp"
                     android:textStyle="bold"
                     android:gravity="center" />
 
                 <!-- 普攻冷却条 -->
                 <ProgressBar
-                    android:id="@+id/enemy_attack_progress"
+                    android:id="@+id/enemy_attack_progress_1"
                     android:layout_width="match_parent"
-                    android:layout_height="6dp"
-                    android:layout_marginTop="40dp"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="30dp"
                     android:progress="0"
                     android:max="100"
                     style="@android:style/Widget.ProgressBar.Horizontal"
                     android:progressDrawable="@drawable/progress_bar_attack" />
 
-                <!-- 技能区域 -->
-                <LinearLayout
+                <!-- 生命值条 -->
+                <ProgressBar
+                    android:id="@+id/enemy_health_1"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="50dp"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="8dp">
+                    android:layout_height="8dp"
+                    android:layout_gravity="bottom"
+                    android:progress="100"
+                    android:max="100"
+                    style="@android:style/Widget.ProgressBar.Horizontal"
+                    android:progressDrawable="@drawable/progress_bar_health" />
 
-                    <ProgressBar
-                        android:id="@+id/enemy_skill_1"
-                        android:layout_width="120dp"
-                        android:layout_height="25dp"
-                        android:layout_marginBottom="4dp"
-                        android:progress="0"
-                        android:max="100"
-                        style="@android:style/Widget.ProgressBar.Horizontal"
-                        android:progressDrawable="@drawable/progress_bar_skill" />
+            </FrameLayout>
 
-                    <TextView
-                        android:id="@+id/enemy_skill_1_text"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="自然庇护"
-                        android:textColor="#FFFFFF"
-                        android:textSize="12sp" />
+            <!-- 敌方单位位置2 -->
+            <FrameLayout
+                android:id="@+id/enemy_card_2"
+                android:layout_width="100dp"
+                android:layout_height="160dp"
+                android:layout_margin="4dp"
+                android:background="@drawable/enemy_card_bg_boss"
+                android:visibility="gone">
 
-                    <ProgressBar
-                        android:id="@+id/enemy_skill_2"
-                        android:layout_width="120dp"
-                        android:layout_height="25dp"
-                        android:layout_marginBottom="4dp"
-                        android:progress="0"
-                        android:max="100"
-                        style="@android:style/Widget.ProgressBar.Horizontal"
-                        android:progressDrawable="@drawable/progress_bar_skill" />
+                <!-- 单位名称 -->
+                <TextView
+                    android:id="@+id/enemy_name_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="30dp"
+                    android:background="#9E9E9E"
+                    android:text=""
+                    android:textColor="#000000"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="center" />
 
-                    <TextView
-                        android:id="@+id/enemy_skill_2_text"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="根须缠绕"
-                        android:textColor="#FFFFFF"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
+                <!-- 普攻冷却条 -->
+                <ProgressBar
+                    android:id="@+id/enemy_attack_progress_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="30dp"
+                    android:progress="0"
+                    android:max="100"
+                    style="@android:style/Widget.ProgressBar.Horizontal"
+                    android:progressDrawable="@drawable/progress_bar_attack" />
 
                 <!-- 生命值条 -->
                 <ProgressBar
-                    android:id="@+id/enemy_health"
+                    android:id="@+id/enemy_health_2"
                     android:layout_width="match_parent"
-                    android:layout_height="10dp"
+                    android:layout_height="8dp"
+                    android:layout_gravity="bottom"
+                    android:progress="100"
+                    android:max="100"
+                    style="@android:style/Widget.ProgressBar.Horizontal"
+                    android:progressDrawable="@drawable/progress_bar_health" />
+
+            </FrameLayout>
+
+            <!-- 敌方单位位置3 -->
+            <FrameLayout
+                android:id="@+id/enemy_card_3"
+                android:layout_width="100dp"
+                android:layout_height="160dp"
+                android:layout_margin="4dp"
+                android:background="@drawable/enemy_card_bg_boss"
+                android:visibility="gone">
+
+                <!-- 单位名称 -->
+                <TextView
+                    android:id="@+id/enemy_name_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="30dp"
+                    android:background="#9E9E9E"
+                    android:text=""
+                    android:textColor="#000000"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="center" />
+
+                <!-- 普攻冷却条 -->
+                <ProgressBar
+                    android:id="@+id/enemy_attack_progress_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="30dp"
+                    android:progress="0"
+                    android:max="100"
+                    style="@android:style/Widget.ProgressBar.Horizontal"
+                    android:progressDrawable="@drawable/progress_bar_attack" />
+
+                <!-- 生命值条 -->
+                <ProgressBar
+                    android:id="@+id/enemy_health_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
                     android:layout_gravity="bottom"
                     android:progress="100"
                     android:max="100"
@@ -230,91 +274,135 @@
             android:layout_weight="1"
             android:orientation="horizontal"
             android:gravity="center"
-            android:padding="10dp">
+            android:padding="8dp">
 
-            <!-- 玩家单位（1v1） -->
+            <!-- 玩家单位位置1 -->
             <FrameLayout
-                android:id="@+id/player_card"
-                android:layout_width="180dp"
-                android:layout_height="200dp"
-                android:layout_margin="16dp"
-                android:background="@drawable/player_card_bg">
+                android:id="@+id/player_card_1"
+                android:layout_width="100dp"
+                android:layout_height="160dp"
+                android:layout_margin="4dp"
+                android:background="@drawable/player_card_bg"
+                android:visibility="gone">
 
                 <!-- 单位名称 -->
                 <TextView
-                    android:id="@+id/player_name"
+                    android:id="@+id/player_name_1"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="30dp"
                     android:background="#E3F2FD"
                     android:text="英雄"
                     android:textColor="#000000"
-                    android:textSize="16sp"
+                    android:textSize="12sp"
                     android:textStyle="bold"
                     android:gravity="center" />
 
                 <!-- 普攻冷却条 -->
                 <ProgressBar
-                    android:id="@+id/player_attack_progress"
+                    android:id="@+id/player_attack_progress_1"
                     android:layout_width="match_parent"
-                    android:layout_height="6dp"
-                    android:layout_marginTop="40dp"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="30dp"
                     android:progress="0"
                     android:max="100"
                     style="@android:style/Widget.ProgressBar.Horizontal"
                     android:progressDrawable="@drawable/progress_bar_attack" />
 
-                <!-- 技能区域 -->
-                <LinearLayout
+                <!-- 生命值条 -->
+                <ProgressBar
+                    android:id="@+id/player_health_1"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="50dp"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="8dp">
+                    android:layout_height="8dp"
+                    android:layout_gravity="bottom"
+                    android:progress="100"
+                    android:max="100"
+                    style="@android:style/Widget.ProgressBar.Horizontal"
+                    android:progressDrawable="@drawable/progress_bar_health" />
 
-                    <ProgressBar
-                        android:id="@+id/player_skill_1"
-                        android:layout_width="120dp"
-                        android:layout_height="25dp"
-                        android:layout_marginBottom="4dp"
-                        android:progress="0"
-                        android:max="100"
-                        style="@android:style/Widget.ProgressBar.Horizontal"
-                        android:progressDrawable="@drawable/progress_bar_skill" />
+            </FrameLayout>
 
-                    <TextView
-                        android:id="@+id/player_skill_1_text"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="重击"
-                        android:textColor="#FFFFFF"
-                        android:textSize="12sp" />
+            <!-- 玩家单位位置2 -->
+            <FrameLayout
+                android:id="@+id/player_card_2"
+                android:layout_width="100dp"
+                android:layout_height="160dp"
+                android:layout_margin="4dp"
+                android:background="@drawable/player_card_bg"
+                android:visibility="gone">
 
-                    <ProgressBar
-                        android:id="@+id/player_skill_2"
-                        android:layout_width="120dp"
-                        android:layout_height="25dp"
-                        android:layout_marginBottom="4dp"
-                        android:progress="0"
-                        android:max="100"
-                        style="@android:style/Widget.ProgressBar.Horizontal"
-                        android:progressDrawable="@drawable/progress_bar_skill" />
+                <!-- 单位名称 -->
+                <TextView
+                    android:id="@+id/player_name_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="30dp"
+                    android:background="#E3F2FD"
+                    android:text=""
+                    android:textColor="#000000"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="center" />
 
-                    <TextView
-                        android:id="@+id/player_skill_2_text"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="治疗"
-                        android:textColor="#FFFFFF"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
+                <!-- 普攻冷却条 -->
+                <ProgressBar
+                    android:id="@+id/player_attack_progress_2"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="30dp"
+                    android:progress="0"
+                    android:max="100"
+                    style="@android:style/Widget.ProgressBar.Horizontal"
+                    android:progressDrawable="@drawable/progress_bar_attack" />
 
                 <!-- 生命值条 -->
                 <ProgressBar
-                    android:id="@+id/player_health"
+                    android:id="@+id/player_health_2"
                     android:layout_width="match_parent"
-                    android:layout_height="10dp"
+                    android:layout_height="8dp"
+                    android:layout_gravity="bottom"
+                    android:progress="100"
+                    android:max="100"
+                    style="@android:style/Widget.ProgressBar.Horizontal"
+                    android:progressDrawable="@drawable/progress_bar_health" />
+
+            </FrameLayout>
+
+            <!-- 玩家单位位置3 -->
+            <FrameLayout
+                android:id="@+id/player_card_3"
+                android:layout_width="100dp"
+                android:layout_height="160dp"
+                android:layout_margin="4dp"
+                android:background="@drawable/player_card_bg"
+                android:visibility="gone">
+
+                <!-- 单位名称 -->
+                <TextView
+                    android:id="@+id/player_name_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="30dp"
+                    android:background="#E3F2FD"
+                    android:text=""
+                    android:textColor="#000000"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="center" />
+
+                <!-- 普攻冷却条 -->
+                <ProgressBar
+                    android:id="@+id/player_attack_progress_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginTop="30dp"
+                    android:progress="0"
+                    android:max="100"
+                    style="@android:style/Widget.ProgressBar.Horizontal"
+                    android:progressDrawable="@drawable/progress_bar_attack" />
+
+                <!-- 生命值条 -->
+                <ProgressBar
+                    android:id="@+id/player_health_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
                     android:layout_gravity="bottom"
                     android:progress="100"
                     android:max="100"

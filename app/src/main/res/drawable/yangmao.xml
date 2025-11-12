@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+
+    <!-- 羊毛图标 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M22,22 L42,22 L42,42 L22,42 Z" />
+    <path
+        android:fillColor="#F0F0F0"
+        android:pathData="M24,24 L40,24 L40,40 L24,40 Z" />
+</vector>

@@ -79,6 +79,8 @@ public class AchievementsActivity extends AppCompatActivity {
         displayAchievementGroup("熔炼物品", achievements, "smelting");
         displayAchievementGroup("贸易大师", achievements, "trading");
         displayAchievementGroup("轮回之路", achievements, "reincarnation");
+        displayAchievementGroup("生存之路", achievements, "survival");
+        displayAchievementGroup("生存之路", achievements, "survival");
     }
 
     private void displayAchievementGroup(String groupTitle, List<AchievementItem> achievements, String achievementType) {
@@ -228,6 +230,9 @@ public class AchievementsActivity extends AppCompatActivity {
             case "reincarnation":
                 baseTitle = "轮回之路";
                 break;
+            case "survival":
+                baseTitle = "生存之路";
+                break;
         }
         
         return baseTitle + " " + levelText;
@@ -259,6 +264,20 @@ public class AchievementsActivity extends AppCompatActivity {
                 return 1; // 每个建筑只需要解锁一次
             case "cooking":
                 return level * 5; // Lv1:5, Lv2:10, ..., Lv5:25
+            case "survival":
+                switch (level) {
+                    case 1: return 1;  // Lv1: 首次简单模式成功轮回
+                    case 2: return 1;  // Lv2: 首次普通模式成功轮回
+                    case 3: return 1;  // Lv3: 首次困难模式成功轮回
+                    case 4: return 100; // Lv4: 简单模式最高生存100天
+                    case 5: return 100; // Lv5: 普通模式最高生存100天
+                    case 6: return 100; // Lv6: 困难模式最高生存100天
+                    case 7: return 500; // Lv7: 简单模式最高生存500天
+                    case 8: return 500; // Lv8: 普通模式最高生存500天
+                    case 9: return 500; // Lv9: 困难模式最高生存500天
+                    case 10: return 1000; // Lv10: 困难模式最高生存1000天
+                    default: return 0;
+                }
             default:
                 return 0;
         }
@@ -318,6 +337,8 @@ public class AchievementsActivity extends AppCompatActivity {
                 return "贸易大师";
             case "reincarnation":
                 return "轮回之路";
+            case "survival":
+                return "生存之路";
             default:
                 return category;
         }

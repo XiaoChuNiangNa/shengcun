@@ -18,8 +18,8 @@ public class ReincarnationActivity extends BaseActivity {
     
     // 不同难度下的轮回天数要求
     private static final int EASY_MIN_DAYS = 5;    // 简单模式至少5天
-    private static final int NORMAL_MIN_DAYS = 15;  // 普通模式至少15天
-    private static final int HARD_MIN_DAYS = 30;    // 困难模式至少30天
+    private static final int NORMAL_MIN_DAYS = 10;  // 普通模式至少10天
+    private static final int HARD_MIN_DAYS = 15;    // 困难模式至少15天
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +38,15 @@ public class ReincarnationActivity extends BaseActivity {
                 "- 所有生存状态与资源\n\n" +
                 "轮回后才可使用个人仓库。");
 
-        btnBack.setOnClickListener(v -> finish());
+        btnBack.setOnClickListener(v -> {
+            // 检查是否从基地进入，如果是则返回基地
+            if (isFromBase()) {
+                startActivity(new Intent(ReincarnationActivity.this, BaseActivity.class));
+                finish();
+            } else {
+                finish();
+            }
+        });
         btnReincarnate.setOnClickListener(v -> {
             // 检查是否符合轮回条件
             if (checkReincarnationCondition()) {
@@ -154,28 +162,34 @@ public class ReincarnationActivity extends BaseActivity {
     }
 
     private void reincarnate() {
-        // 1. 执行完全重置（包括背包、建筑、地图等所有数据）
+        // 1. 获取当前游戏难度
+        String currentDifficulty = getCurrentDifficulty();
+        
+        // 2. 执行完全重置（包括背包、建筑、地图等所有数据）
         dbHelper.resetGame(userId);
 
-        // 2. 新增：如果是测试账号，重新初始化其特权数据
+        // 3. 新增：如果是测试账号，重新初始化其特权数据
         if (dbHelper.isTestAccount(userId)) {
             dbHelper.reinitTestAccountData(userId);
         }
 
-        // 3. 更新轮回次数统计
+        // 4. 更新轮回次数统计
         dbHelper.incrementReincarnationTimes(userId);
         
-        // 4. 计算并更新所有成就进度（在轮回后）
+        // 5. 计算并更新所有成就进度（在轮回后）
         AchievementManager achievementManager = AchievementManager.getInstance(dbHelper);
         achievementManager.calculateAchievementProgressAfterReincarnation(userId);
 
-        // 4. 设置游戏结束状态
-        GameStateManager gameStateManager = GameStateManager.getInstance(this);
-        gameStateManager.setGameEnded();
-        
-        android.util.Log.i("GameState", "ReincarnationActivity - 轮回完成，设置游戏结束状态");
+        // 6. 处理难度解锁逻辑
+        handleDifficultyUnlock(currentDifficulty);
 
-        // 5. 提示信息及页面跳转（轮回后返回标题页）
+        // 7. 重置游戏状态，确保可以重新开始游戏
+        GameStateManager gameStateManager = GameStateManager.getInstance(this);
+        gameStateManager.resetGame();
+        
+        android.util.Log.i("GameState", "ReincarnationActivity - 轮回完成，游戏状态已重置");
+
+        // 8. 提示信息及页面跳转（轮回后返回标题页）
         Toast.makeText(this,
                 "轮回成功！请前往成就系统领取希望点数奖励",
                 Toast.LENGTH_LONG).show();
@@ -186,5 +200,41 @@ public class ReincarnationActivity extends BaseActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
+    }
+
+    /**
+     * 处理难度解锁逻辑
+     * 根据当前轮回的难度解锁下一难度
+     */
+    private void handleDifficultyUnlock(String currentDifficulty) {
+        switch (currentDifficulty) {
+            case Constant.DIFFICULTY_EASY:
+                // 简单难度首次轮回成功后解锁普通难度
+                if (!dbHelper.isEasyDifficultyCleared(userId)) {
+                    dbHelper.setEasyDifficultyCleared(userId);
+                    Toast.makeText(this, "恭喜！普通难度已解锁", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case Constant.DIFFICULTY_NORMAL:
+                // 普通难度首次轮回成功后解锁困难难度
+                if (!dbHelper.isNormalDifficultyCleared(userId)) {
+                    dbHelper.setNormalDifficultyCleared(userId);
+                    Toast.makeText(this, "恭喜！困难难度已解锁", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case Constant.DIFFICULTY_HARD:
+                // 困难难度首次轮回成功后解锁困难难度标记
+                if (!dbHelper.isHardDifficultyCleared(userId)) {
+                    dbHelper.setHardDifficultyCleared(userId);
+                }
+                break;
+        }
+    }
+
+    /**
+     * 检查是否从基地进入
+     */
+    protected boolean isFromBase() {
+        return getIntent().getBooleanExtra("from_base", false);
     }
 }

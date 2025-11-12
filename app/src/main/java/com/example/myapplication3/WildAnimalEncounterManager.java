@@ -1,5 +1,6 @@
 package com.example.myapplication3;
 
+import android.content.Context;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,13 +14,25 @@ import java.util.Random;
  */
 public class WildAnimalEncounterManager {
     private static final String TAG = "WildAnimalEncounter";
-    private static final double ENCOUNTER_PROBABILITY = 0.1; // 10%遭遇概率
+    
+    // 基于难度的遭遇概率
+    private static final double EASY_ENCOUNTER_PROBABILITY = 0.05;    // 简单模式：5%
+    private static final double NORMAL_ENCOUNTER_PROBABILITY = 0.10;  // 普通模式：10%
+    private static final double HARD_ENCOUNTER_PROBABILITY = 0.15;    // 困难模式：15%
+    
+    // 中型动物遭遇概率（仅在普通和困难模式下）
+    private static final double MEDIUM_ANIMAL_PROBABILITY = 0.02;     // 2%概率遇到中型动物
     
     private static WildAnimalEncounterManager instance;
     private Random random = new Random();
     
     // 地形与动物的对应关系
     private Map<String, List<String>> terrainAnimals = new HashMap<>();
+    
+    // 动物分类列表
+    private List<String> smallAnimals = new ArrayList<>();
+    private List<String> mediumAnimals = new ArrayList<>();
+    private List<String> largeAnimals = new ArrayList<>();
     
     public static WildAnimalEncounterManager getInstance() {
         if (instance == null) {
@@ -30,6 +43,7 @@ public class WildAnimalEncounterManager {
     
     private WildAnimalEncounterManager() {
         initTerrainAnimalMapping();
+        initAnimalCategoryMapping();
     }
     
     /**
@@ -121,17 +135,92 @@ public class WildAnimalEncounterManager {
     }
     
     /**
-     * 检查是否遭遇野生动物
+     * 初始化动物分类映射
      */
-    public boolean checkForWildAnimalEncounter() {
-        return random.nextDouble() < ENCOUNTER_PROBABILITY;
+    private void initAnimalCategoryMapping() {
+        // 小型动物
+        smallAnimals.add("野兔");
+        smallAnimals.add("小猪");
+        smallAnimals.add("山羊");
+        smallAnimals.add("野鸡");
+        smallAnimals.add("蛇");
+        smallAnimals.add("食人鱼");
+        
+        // 中型动物
+        mediumAnimals.add("狼");
+        mediumAnimals.add("鹿");
+        mediumAnimals.add("野猪");
+        mediumAnimals.add("猴子");
+        
+        // 大型动物
+        largeAnimals.add("老虎");
+        largeAnimals.add("狮子");
+        largeAnimals.add("熊");
+        largeAnimals.add("猎豹");
+        largeAnimals.add("鲨鱼");
     }
     
     /**
-     * 根据地形获取随机动物
+     * 检查是否遭遇野生动物（基于难度）
+     */
+    public boolean checkForWildAnimalEncounter() {
+        String difficulty = getCurrentDifficulty();
+        double encounterProbability = getDifficultyEncounterProbability(difficulty);
+        
+        Log.d(TAG, "当前难度: " + difficulty + ", 遭遇概率: " + (encounterProbability * 100) + "%");
+        return random.nextDouble() < encounterProbability;
+    }
+    
+    /**
+     * 根据难度获取遭遇概率
+     */
+    private double getDifficultyEncounterProbability(String difficulty) {
+        switch (difficulty) {
+            case Constant.DIFFICULTY_EASY:
+                return EASY_ENCOUNTER_PROBABILITY;
+            case Constant.DIFFICULTY_NORMAL:
+                return NORMAL_ENCOUNTER_PROBABILITY;
+            case Constant.DIFFICULTY_HARD:
+                return HARD_ENCOUNTER_PROBABILITY;
+            default:
+                return NORMAL_ENCOUNTER_PROBABILITY; // 默认使用普通模式概率
+        }
+    }
+    
+    /**
+     * 获取当前游戏难度
+     */
+    private String getCurrentDifficulty() {
+        try {
+            // 获取当前用户的难度设置
+            Context context = MyApplication.getAppContext();
+            if (context != null) {
+                Map<String, Object> userStatus = DBHelper.getInstance(context).getUserStatus(MyApplication.currentUserId);
+                String difficulty = (String) userStatus.get("difficulty");
+                
+                if (difficulty == null || difficulty.isEmpty()) {
+                    // 如果未设置难度，使用默认的普通难度
+                    difficulty = Constant.DIFFICULTY_NORMAL;
+                }
+                
+                return difficulty;
+            } else {
+                Log.w(TAG, "无法获取应用上下文，使用默认难度");
+                return Constant.DIFFICULTY_NORMAL;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "获取难度设置失败: " + e.getMessage());
+            return Constant.DIFFICULTY_NORMAL; // 错误时使用普通难度
+        }
+    }
+    
+    /**
+     * 根据地形和难度获取随机动物
      */
     public Monster getRandomAnimalForTerrain(String terrainType) {
+        String difficulty = getCurrentDifficulty();
         List<String> animalNames = terrainAnimals.get(terrainType);
+        
         if (animalNames == null || animalNames.isEmpty()) {
             // 如果地形没有对应的动物，使用默认动物
             animalNames = terrainAnimals.get("草原");
@@ -141,8 +230,17 @@ public class WildAnimalEncounterManager {
             }
         }
         
+        // 根据难度过滤动物列表
+        List<String> filteredAnimals = getFilteredAnimalsByDifficulty(animalNames, difficulty);
+        
+        if (filteredAnimals.isEmpty()) {
+            // 如果没有合适的动物，使用原始列表
+            filteredAnimals = animalNames;
+            Log.w(TAG, "难度" + difficulty + "下没有合适的动物，使用原始列表");
+        }
+        
         // 随机选择一个动物名称
-        String animalName = animalNames.get(random.nextInt(animalNames.size()));
+        String animalName = filteredAnimals.get(random.nextInt(filteredAnimals.size()));
         
         // 从MonsterManager获取动物数据
         Monster animal = MonsterManager.getMonsterByName(animalName);
@@ -152,7 +250,62 @@ public class WildAnimalEncounterManager {
             animal = MonsterManager.getRandomMonster();
         }
         
+        Log.d(TAG, "难度: " + difficulty + ", 地形: " + terrainType + ", 遭遇动物: " + animalName);
         return animal;
+    }
+    
+    /**
+     * 根据难度过滤动物列表
+     */
+    private List<String> getFilteredAnimalsByDifficulty(List<String> allAnimals, String difficulty) {
+        List<String> filteredAnimals = new ArrayList<>();
+        
+        for (String animalName : allAnimals) {
+            Monster animal = MonsterManager.getMonsterByName(animalName);
+            if (animal == null) continue;
+            
+            String animalType = animal.getType();
+            
+            switch (difficulty) {
+                case Constant.DIFFICULTY_EASY:
+                    // 简单模式：只允许小型动物，且在遇到时检查中型动物概率
+                    if (smallAnimals.contains(animalName)) {
+                        filteredAnimals.add(animalName);
+                    }
+                    break;
+                    
+                case Constant.DIFFICULTY_NORMAL:
+                    // 普通模式：允许小型和中型动物，检查中型动物遭遇概率
+                    if (smallAnimals.contains(animalName)) {
+                        filteredAnimals.add(animalName);
+                    } else if (mediumAnimals.contains(animalName)) {
+                        // 2%概率遇到中型动物
+                        if (random.nextDouble() < MEDIUM_ANIMAL_PROBABILITY) {
+                            filteredAnimals.add(animalName);
+                            Log.d(TAG, "普通模式下触发2%中型动物概率，遭遇: " + animalName);
+                        }
+                    }
+                    break;
+                    
+                case Constant.DIFFICULTY_HARD:
+                    // 困难模式：允许所有类型的动物
+                    filteredAnimals.add(animalName);
+                    break;
+                    
+                default:
+                    // 默认情况：使用普通模式规则
+                    if (smallAnimals.contains(animalName)) {
+                        filteredAnimals.add(animalName);
+                    } else if (mediumAnimals.contains(animalName)) {
+                        if (random.nextDouble() < MEDIUM_ANIMAL_PROBABILITY) {
+                            filteredAnimals.add(animalName);
+                        }
+                    }
+                    break;
+            }
+        }
+        
+        return filteredAnimals;
     }
     
     /**
@@ -218,9 +371,9 @@ public class WildAnimalEncounterManager {
     }
     
     /**
-     * 获取遭遇概率
+     * 获取当前难度的遭遇概率
      */
     public double getEncounterProbability() {
-        return ENCOUNTER_PROBABILITY;
+        return getDifficultyEncounterProbability(getCurrentDifficulty());
     }
 }

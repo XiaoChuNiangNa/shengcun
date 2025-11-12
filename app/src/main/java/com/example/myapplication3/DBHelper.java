@@ -91,7 +91,9 @@ public class DBHelper extends SQLiteOpenHelper {
                 "is_trading_unlocked INTEGER NOT NULL DEFAULT 0," +
                 "is_sleep_unlocked INTEGER NOT NULL DEFAULT 0," +
                 "last_rest_time INTEGER DEFAULT 0," +
+                "is_easy_cleared INTEGER DEFAULT 0," +  // 新增：简单难度通关标记
                 "is_normal_cleared INTEGER DEFAULT 0," +
+                "is_hard_cleared INTEGER DEFAULT 0," +  // 新增：困难难度通关标记
                 "hope_points INTEGER NOT NULL DEFAULT 0," +  // 希望点数
                 "game_hour INTEGER NOT NULL DEFAULT " + Constant.GAME_HOUR_DEFAULT + "," +
                 "game_day INTEGER NOT NULL DEFAULT " + Constant.GAME_DAY_DEFAULT + "," +
@@ -570,6 +572,17 @@ public class DBHelper extends SQLiteOpenHelper {
             } catch (Exception e) {
                 // 如果列已经存在，忽略错误
                 Log.d("DBHelper", "level列已存在，跳过添加");
+            }
+        }
+
+        if (oldVersion < 29) {
+            // 版本29升级逻辑：添加难度解锁字段
+            try {
+                db.execSQL("ALTER TABLE user_status ADD COLUMN is_easy_cleared INTEGER DEFAULT 0");
+                db.execSQL("ALTER TABLE user_status ADD COLUMN is_hard_cleared INTEGER DEFAULT 0");
+            } catch (Exception e) {
+                // 如果列已经存在，忽略错误
+                Log.d("DBHelper", "难度解锁字段已存在，跳过添加");
             }
         }
 
@@ -1866,6 +1879,50 @@ public class DBHelper extends SQLiteOpenHelper {
     public boolean isNormalDifficultyCleared(int userId) {
         SQLiteDatabase db = getReadableDatabase();
         Cursor cursor = db.query("user_status", new String[]{"is_normal_cleared"},
+                "user_id=?", new String[]{String.valueOf(userId)}, null, null, null);
+        if (cursor.moveToFirst()) {
+            int cleared = cursor.getInt(0);
+            cursor.close();
+            return cleared == 1;
+        }
+        cursor.close();
+        return false;
+    }
+
+    // 新增：设置简单难度通关
+    public void setEasyDifficultyCleared(int userId) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("is_easy_cleared", 1);
+        db.update("user_status", values, "user_id=?", new String[]{String.valueOf(userId)});
+    }
+
+    // 新增：查询简单难度是否通关
+    public boolean isEasyDifficultyCleared(int userId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query("user_status", new String[]{"is_easy_cleared"},
+                "user_id=?", new String[]{String.valueOf(userId)}, null, null, null);
+        if (cursor.moveToFirst()) {
+            int cleared = cursor.getInt(0);
+            cursor.close();
+            return cleared == 1;
+        }
+        cursor.close();
+        return false;
+    }
+
+    // 新增：设置困难难度通关
+    public void setHardDifficultyCleared(int userId) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("is_hard_cleared", 1);
+        db.update("user_status", values, "user_id=?", new String[]{String.valueOf(userId)});
+    }
+
+    // 新增：查询困难难度是否通关
+    public boolean isHardDifficultyCleared(int userId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query("user_status", new String[]{"is_hard_cleared"},
                 "user_id=?", new String[]{String.valueOf(userId)}, null, null, null);
         if (cursor.moveToFirst()) {
             int cleared = cursor.getInt(0);

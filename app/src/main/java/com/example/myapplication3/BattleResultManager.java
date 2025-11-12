@@ -239,51 +239,34 @@ public class BattleResultManager {
     
     /**
      * 显示胜利消息
+     * 已废弃：消息现在在弹窗中显示
      */
     private void showVictoryMessage(int goldReward, int expReward) {
-        String message = String.format("战斗胜利！\n获得 %d 金币和 %d 经验\n游戏时间 +%d 小时", 
-            goldReward, expReward, HOURS_PER_BATTLE);
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+        // 消息现在在弹窗中显示，此方法保留为空
     }
     
     /**
      * 显示失败消息
+     * 已废弃：消息现在在弹窗中显示
      */
     private void showDefeatMessage() {
-        Toast.makeText(context, "战斗失败！游戏结束", Toast.LENGTH_LONG).show();
+        // 消息现在在弹窗中显示，此方法保留为空
     }
     
     /**
      * 显示升级消息
+     * 已废弃：消息现在在弹窗中显示
      */
     private void showDropMessage(String[] drops, String monsterName, int expReward) {
-        if (drops.length == 0) {
-            // 用\n替换实际换行，避免字符串内直接换行
-            String message = String.format("击败了 %s！\n获得 %d 经验值\n没有获得任何掉落物\n游戏时间 +%d 小时",
-                    monsterName, expReward, HOURS_PER_BATTLE);
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        StringBuilder dropText = new StringBuilder();
-        for (int i = 0; i < drops.length; i++) {
-            if (i > 0) dropText.append(", ");
-            dropText.append(drops[i]);
-        }
-
-        // 同样用\n替换实际换行
-        String message = String.format("击败了 %s！\n获得 %d 经验值\n获得：%s\n游戏时间 +%d 小时",
-                monsterName, expReward, dropText.toString(), HOURS_PER_BATTLE);
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+        // 消息现在在弹窗中显示，此方法保留为空
     }
 
     /**
      * 显示经验奖励消息
+     * 已废弃：消息现在在弹窗中显示
      */
     private void showExpRewardMessage(int expReward) {
-        // 用\n替换实际换行
-        String message = String.format("战斗胜利！\n获得 %d 经验值\n游戏时间 +%d 小时", expReward, HOURS_PER_BATTLE);
-        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+        // 消息现在在弹窗中显示，此方法保留为空
     }
 
     /**

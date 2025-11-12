@@ -30,8 +30,8 @@ public class MonsterManager {
         hareSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.ESCAPE, 1));
         
         DropItem[] hareDrops = {
-            new DropItem("肉", 0.8, 2), // 80%概率掉落1-2个肉
-            new DropItem("皮革", 0.4, 1) // 40%概率掉落0-1个皮革
+            new DropItem("肉", 0.8, 3), // 80%概率掉落1-3个肉
+            new DropItem("皮革", 0.6, 2) // 60%概率掉落1-2个皮革
         };
         
         Monster hare = new Monster(
@@ -45,8 +45,8 @@ public class MonsterManager {
         pigletSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.ESCAPE, 1));
         
         DropItem[] pigletDrops = {
-            new DropItem("肉", 0.9, 5), // 90%概率掉落3-5个肉
-            new DropItem("皮革", 0.5, 2) // 50%概率掉落0-2个皮革
+            new DropItem("肉", 0.8, 3), // 80%概率掉落1-3个肉
+            new DropItem("皮革", 0.6, 2) // 60%概率掉落1-2个皮革
         };
         
         Monster piglet = new Monster(
@@ -60,9 +60,9 @@ public class MonsterManager {
         goatSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.CHARGE, 1));
         
         DropItem[] goatDrops = {
-            new DropItem("肉", 0.8, 4), // 80%概率掉落1-4个肉
+            new DropItem("肉", 0.8, 3), // 80%概率掉落1-3个肉
             new DropItem("皮革", 0.6, 2), // 60%概率掉落1-2个皮革
-            new DropItem("羊毛", 0.7, 3) // 70%概率掉落1-3个羊毛
+            new DropItem("羊毛", 0.7, 2) // 70%概率掉落1-2个羊毛
         };
         
         Monster goat = new Monster(
@@ -75,7 +75,7 @@ public class MonsterManager {
         List<BattleSkill> chickenSkills = new ArrayList<>();
         
         DropItem[] chickenDrops = {
-            new DropItem("肉", 0.8, 2) // 80%概率掉落1-2个肉
+            new DropItem("肉", 0.8, 3) // 80%概率掉落1-3个肉
         };
         
         Monster chicken = new Monster(
@@ -89,7 +89,7 @@ public class MonsterManager {
         snakeSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.POISON, 1));
         
         DropItem[] snakeDrops = {
-            new DropItem("肉", 0.7, 2) // 70%概率掉落1-2个肉
+            new DropItem("肉", 0.7, 3) // 70%概率掉落1-3个肉
         };
         
         Monster snake = new Monster(
@@ -103,7 +103,7 @@ public class MonsterManager {
         piranhaSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.BITE, 1));
         
         DropItem[] piranhaDrops = {
-            new DropItem("鱼", 0.6, 2) // 60%概率掉落0-2个鱼
+            new DropItem("鱼", 0.7, 3) // 70%概率掉落1-3个鱼
         };
         
         Monster piranha = new Monster(
@@ -118,8 +118,9 @@ public class MonsterManager {
         wolfSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.AOE, 1));
         
         DropItem[] wolfDrops = {
-            new DropItem("肉", 0.9, 5), // 90%概率掉落2-5个肉
-            new DropItem("兽骨", 0.7, 3) // 70%概率掉落1-3个兽骨
+            new DropItem("肉", 0.9, 4), // 90%概率掉落2-4个肉
+            new DropItem("皮革", 0.7, 4), // 70%概率掉落1-4个皮革
+            new DropItem("兽骨", 0.7, 2) // 70%概率掉落1-2个兽骨
         };
         
         Monster wolf = new Monster(
@@ -133,9 +134,9 @@ public class MonsterManager {
         deerSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.CHARGE, 1));
         
         DropItem[] deerDrops = {
-            new DropItem("肉", 0.9, 5), // 90%概率掉落2-5个肉
-            new DropItem("皮革", 0.8, 4), // 80%概率掉落2-4个皮革
-            new DropItem("兽骨", 0.8, 4) // 80%概率掉落2-4个兽骨
+            new DropItem("肉", 0.9, 4), // 90%概率掉落2-4个肉
+            new DropItem("皮革", 0.8, 4), // 80%概率掉落1-4个皮革
+            new DropItem("兽骨", 0.7, 2) // 70%概率掉落1-2个兽骨
         };
         
         Monster deer = new Monster(
@@ -149,8 +150,9 @@ public class MonsterManager {
         boarSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.CHARGE, 2));
         
         DropItem[] boarDrops = {
-            new DropItem("肉", 0.9, 6), // 90%概率掉落4-6个肉
-            new DropItem("皮革", 0.8, 5) // 80%概率掉落3-5个皮革
+            new DropItem("肉", 0.9, 4), // 90%概率掉落2-4个肉
+            new DropItem("皮革", 0.8, 4), // 80%概率掉落1-4个皮革
+            new DropItem("兽骨", 0.7, 2) // 70%概率掉落1-2个兽骨
         };
         
         Monster boar = new Monster(
@@ -166,8 +168,8 @@ public class MonsterManager {
         monkeySkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.ESCAPE, 1));
         
         DropItem[] monkeyDrops = {
-            new DropItem("肉", 0.8, 5), // 80%概率掉落2-5个肉
-            new DropItem("皮革", 0.7, 4), // 70%概率掉落2-4个皮革
+            new DropItem("肉", 0.8, 4), // 80%概率掉落2-4个肉
+            new DropItem("皮革", 0.7, 4), // 70%概率掉落1-4个皮革
             new DropItem("兽骨", 0.6, 2) // 60%概率掉落1-2个兽骨
         };
         
@@ -182,9 +184,9 @@ public class MonsterManager {
         tigerSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.BITE, 2));
         
         DropItem[] tigerDrops = {
-            new DropItem("肉", 0.9, 6), // 90%概率掉落4-6个肉
-            new DropItem("皮革", 0.8, 5), // 80%概率掉落3-5个皮革
-            new DropItem("兽骨", 0.7, 4) // 70%概率掉落2-4个兽骨
+            new DropItem("肉", 0.9, 5), // 90%概率掉落3-5个肉
+            new DropItem("皮革", 0.8, 5), // 80%概率掉落2-5个皮革
+            new DropItem("兽骨", 0.7, 4) // 70%概率掉落1-4个兽骨
         };
         
         Monster tiger = new Monster(
@@ -199,9 +201,9 @@ public class MonsterManager {
         lionSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.STUN, 1));
         
         DropItem[] lionDrops = {
-            new DropItem("肉", 0.9, 7), // 90%概率掉落5-7个肉
-            new DropItem("皮革", 0.8, 6), // 80%概率掉落4-6个皮革
-            new DropItem("兽骨", 0.8, 5) // 80%概率掉落3-5个兽骨
+            new DropItem("肉", 0.9, 5), // 90%概率掉落3-5个肉
+            new DropItem("皮革", 0.8, 5), // 80%概率掉落2-5个皮革
+            new DropItem("兽骨", 0.8, 4) // 80%概率掉落1-4个兽骨
         };
         
         Monster lion = new Monster(
@@ -216,9 +218,9 @@ public class MonsterManager {
         bearSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.STUN, 1));
         
         DropItem[] bearDrops = {
-            new DropItem("肉", 0.9, 9), // 90%概率掉落6-9个肉
-            new DropItem("皮革", 0.8, 8), // 80%概率掉落5-8个皮革
-            new DropItem("兽骨", 0.8, 5) // 80%概率掉落3-5个兽骨
+            new DropItem("肉", 0.9, 5), // 90%概率掉落3-5个肉
+            new DropItem("皮革", 0.8, 5), // 80%概率掉落2-5个皮革
+            new DropItem("兽骨", 0.8, 4) // 80%概率掉落1-4个兽骨
         };
         
         Monster bear = new Monster(
@@ -233,9 +235,9 @@ public class MonsterManager {
         cheetahSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.CHARGE, 1));
         
         DropItem[] cheetahDrops = {
-            new DropItem("肉", 0.9, 6), // 90%概率掉落4-6个肉
-            new DropItem("皮革", 0.8, 5), // 80%概率掉落3-5个皮革
-            new DropItem("兽骨", 0.7, 4) // 70%概率掉落2-4个兽骨
+            new DropItem("肉", 0.9, 5), // 90%概率掉落3-5个肉
+            new DropItem("皮革", 0.8, 5), // 80%概率掉落2-5个皮革
+            new DropItem("兽骨", 0.7, 4) // 70%概率掉落1-4个兽骨
         };
         
         Monster cheetah = new Monster(
@@ -250,9 +252,9 @@ public class MonsterManager {
         sharkSkills.add(BattleSkillManager.createSkill(BattleSkillManager.SkillType.CHARGE, 1));
         
         DropItem[] sharkDrops = {
-            new DropItem("肉", 0.9, 6), // 90%概率掉落4-6个肉
-            new DropItem("皮革", 0.8, 5), // 80%概率掉落3-5个皮革
-            new DropItem("兽骨", 0.7, 4) // 70%概率掉落2-4个兽骨
+            new DropItem("肉", 0.9, 5), // 90%概率掉落3-5个肉
+            new DropItem("皮革", 0.8, 5), // 80%概率掉落2-5个皮革
+            new DropItem("兽骨", 0.7, 4) // 70%概率掉落1-4个兽骨
         };
         
         Monster shark = new Monster(
@@ -326,7 +328,7 @@ public class MonsterManager {
         // 玩家默认属性：攻击5，防御0，速度100，无技能
         return new BattleUnit(
             "玩家",
-            50, // 玩家生命值
+            Constant.INIT_LIFE, // 玩家生命值（使用统一常量）
             5,  // 攻击力
             0,  // 防御力
             100, // 速度

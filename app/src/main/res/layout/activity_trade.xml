@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:background="#F5F5F5">
 
@@ -20,7 +21,7 @@
             android:layout_height="48dp"
             android:background="?android:attr/selectableItemBackground"
             android:src="@android:drawable/ic_menu_revert"
-            android:tint="#FFFFFF" />
+            app:tint="#FFFFFF" />
 
         <TextView
             android:layout_width="0dp"
@@ -42,13 +43,32 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- 当前金币显示 -->
         <TextView
+            android:id="@+id/tv_current_gold"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="选择贸易项目"
+            android:text="当前金币：0"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:layout_marginBottom="16dp" />
+            android:textColor="#FFD700"
+            android:gravity="center"
+            android:background="#FFF8E1"
+            android:padding="12dp"
+            android:layout_marginBottom="8dp" />
+
+        <!-- 刷新计时器 -->
+        <TextView
+            android:id="@+id/tv_refresh_timer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="下次刷新: 10:00"
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"
+            android:background="#E3F2FD"
+            android:padding="8dp" />
 
         <ScrollView
             android:layout_width="match_parent"

@@ -260,6 +260,10 @@ public class BattleSkillManager {
                     // 眩晕效果改为回合制
                     BuffEffectManager.addEffect(target.getName(), BuffEffectManager.EFFECT_STUN, 
                         1, stunDuration, caster.getName());
+                    
+                    // 应用眩晕效果到目标单位
+                    BuffEffectManager.applyStunToUnit(target.getName(), target, caster.getName(), stunDuration);
+                    
                     result.append(caster.getName()).append(" 震慑了 ").append(target.getName())
                           .append(" ，使其眩晕 ").append(stunDuration).append(" 回合！");
                 }

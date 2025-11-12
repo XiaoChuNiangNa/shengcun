@@ -31,7 +31,6 @@ public class LevelExperienceManager {
             editor.putInt("current_level", 1);
             editor.putInt("current_exp", 0);
             editor.putInt("total_hp_bonus", 0);
-            editor.putInt("total_attack_bonus", 0);
             editor.apply();
         }
     }
@@ -55,13 +54,6 @@ public class LevelExperienceManager {
      */
     public int getTotalHpBonus() {
         return sharedPreferences.getInt("total_hp_bonus", 0);
-    }
-    
-    /**
-     * 获取总攻击力加成
-     */
-    public int getTotalAttackBonus() {
-        return sharedPreferences.getInt("total_attack_bonus", 0);
     }
     
     /**
@@ -153,41 +145,29 @@ public class LevelExperienceManager {
         int newHpBonus = currentHpBonus + 5;
         editor.putInt("total_hp_bonus", newHpBonus);
         
-        // 2. 随机给予5-20黄金奖励
+        // 2. 随机给予5-20金币奖励
         int randomGold = 5 + random.nextInt(16); // 5-20随机数
-        
-        // 3. 特殊等级奖励：每升到5的倍数等级时增加1攻击力
-        int currentAttackBonus = getTotalAttackBonus();
-        if (newLevel % 5 == 0) {
-            // 5的倍数等级增加1攻击力
-            editor.putInt("total_attack_bonus", currentAttackBonus + 1);
-        }
         
         // 记录升级奖励信息
         editor.putInt("last_level_up_level", newLevel);
         editor.putInt("last_level_up_gold", randomGold);
         editor.putInt("last_level_up_hp", 5);
-        editor.putInt("last_level_up_attack", (newLevel % 5 == 0) ? 1 : 0);
         
         // 应用更改
         editor.apply();
         
         // 显示升级奖励消息
-        showLevelUpRewardMessage(newLevel, randomGold, newLevel % 5 == 0);
+        showLevelUpRewardMessage(newLevel, randomGold);
     }
     
     /**
      * 显示升级奖励消息
      */
-    private void showLevelUpRewardMessage(int newLevel, int goldBonus, boolean gotAttackBonus) {
+    private void showLevelUpRewardMessage(int newLevel, int goldBonus) {
         StringBuilder message = new StringBuilder();
         message.append("恭喜升到 ").append(newLevel).append(" 级！\n"); // 去掉字符串中的实际换行，保留\n
-        message.append("生命值 +5\n"); // 用\n表示换行，去掉非法的\和实际换行
+        message.append("生命值上限 +5\n"); // 用\n表示换行，去掉非法的\和实际换行
         message.append("获得金币：").append(goldBonus);
-
-        if (gotAttackBonus) {
-            message.append("\n攻击力 +1"); // 用\n表示换行，去掉非法的\和实际换行
-        }
 
         Toast.makeText(context, message.toString(), Toast.LENGTH_LONG).show();
     }
@@ -261,7 +241,6 @@ public class LevelExperienceManager {
         editor.putInt("current_level", 1);
         editor.putInt("current_exp", 0);
         editor.putInt("total_hp_bonus", 0);
-        editor.putInt("total_attack_bonus", 0);
         editor.apply();
         
         Toast.makeText(context, "等级和经验已重置", Toast.LENGTH_SHORT).show();

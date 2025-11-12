@@ -45,17 +45,17 @@
         android:gravity="end">
 
         <Button
-            android:id="@+id/btn_move"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="移动"
-            android:layout_marginEnd="8dp"/>
-
-        <Button
             android:id="@+id/btn_use"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="使用"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btn_move"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="转移"
             android:layout_marginEnd="8dp"/>
 
         <Button

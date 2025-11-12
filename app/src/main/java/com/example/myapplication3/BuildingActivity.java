@@ -54,7 +54,15 @@ public class BuildingActivity extends BaseActivity {
 
         LinearLayout container = findViewById(R.id.container);
         ImageButton btnBack = findViewById(R.id.btn_back);
-        btnBack.setOnClickListener(v -> finish());
+        btnBack.setOnClickListener(v -> {
+            // 检查是否从基地进入，如果是则返回基地
+            if (isFromBase()) {
+                startActivity(new Intent(BuildingActivity.this, BaseActivity.class));
+                finish();
+            } else {
+                finish();
+            }
+        });
 
         initBuildingList(container);
         initHouseUpgradeOptions(container);
@@ -728,6 +736,13 @@ public class BuildingActivity extends BaseActivity {
         if (backgroundView != null) {
             backgroundView.invalidate();
         }
+    }
+
+    /**
+     * 检查是否从基地进入
+     */
+    protected boolean isFromBase() {
+        return getIntent().getBooleanExtra("from_base", false);
     }
 
     // 安全的异步任务类 - 建筑状态保存

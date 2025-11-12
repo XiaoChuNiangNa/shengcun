@@ -30,7 +30,11 @@ public class ResourceImageManager {
      * 初始化物品图片映射（使用拼音命名资源，与Constant中的物品常量对应）
      */
     private static void initItemImages() {
-        // 基础资源类（36种）
+        // 基础资源类（41种）
+        itemImageMap.put(ItemConstants.ITEM_MEAT, R.drawable.rou);                // 肉
+        itemImageMap.put(ItemConstants.ITEM_LEATHER, R.drawable.pige);            // 皮革
+        itemImageMap.put(ItemConstants.ITEM_BONE, R.drawable.shougu);              // 兽骨
+        itemImageMap.put(ItemConstants.ITEM_WOOL, R.drawable.yangmao);            // 羊毛
         itemImageMap.put(ItemConstants.ITEM_WEED, R.drawable.zacao);               // 杂草
         itemImageMap.put(ItemConstants.ITEM_BERRY, R.drawable.jiangguo);            // 浆果
         itemImageMap.put(ItemConstants.ITEM_APPLE, R.drawable.pingguo);             // 苹果
@@ -42,7 +46,7 @@ public class ResourceImageManager {
         itemImageMap.put(ItemConstants.ITEM_HONEYCOMB, R.drawable.fengchao);        // 蜂巢
         itemImageMap.put(ItemConstants.ITEM_ACORN, R.drawable.xiangguo);            // 橡果
         itemImageMap.put(ItemConstants.ITEM_VINE, R.drawable.tengwan);              // 藤蔓
-        itemImageMap.put(ItemConstants.ITEM_RESIN, R.drawable.shui);              // 树脂
+        itemImageMap.put(ItemConstants.ITEM_RESIN, R.drawable.shuzhi);              // 树脂
         itemImageMap.put(ItemConstants.ITEM_TRUFFLE, R.drawable.songlu);            // 松露
         itemImageMap.put(ItemConstants.ITEM_STONE, R.drawable.shitou);              // 石头
         itemImageMap.put(ItemConstants.ITEM_IRON_ORE, R.drawable.tiekuang);         // 铁矿

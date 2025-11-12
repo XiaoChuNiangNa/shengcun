@@ -6,6 +6,11 @@ package com.example.myapplication3;
 public class ItemConstants {
 
     // 基础资源类
+    public static final String ITEM_MEAT = "肉";
+    public static final String ITEM_FISH = "鱼";
+    public static final String ITEM_LEATHER = "皮革";
+    public static final String ITEM_BONE = "兽骨";
+    public static final String ITEM_WOOL = "羊毛";
     public static final String ITEM_WEED = "杂草";
     public static final String ITEM_BERRY = "浆果";
     public static final String ITEM_APPLE = "苹果";
@@ -28,7 +33,6 @@ public class ItemConstants {
     public static final String ITEM_SNOW_LOTUS = "雪莲";
     public static final String ITEM_OBSIDIAN = "黑曜石";
     public static final String ITEM_WATER = "水";
-    public static final String ITEM_FISH = "鱼";
     public static final String ITEM_KELP = "海带";
     public static final String ITEM_SAND = "沙子";
     public static final String ITEM_SHELL = "贝壳";
@@ -43,7 +47,7 @@ public class ItemConstants {
     public static final String ITEM_STONE_FISHING_ROD = "石质鱼竿";
     public static final String ITEM_DRIED_BREAD = "干面包";
     public static final String ITEM_IRON_INGOT = "铁锭";
-    public static final String ITEM_GOLD = "黄金";
+    public static final String ITEM_GOLD = "金币";
 
     // 新增食材
     public static final String ITEM_RICE = "大米";
