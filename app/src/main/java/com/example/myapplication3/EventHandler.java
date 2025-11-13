@@ -134,19 +134,18 @@ public class EventHandler implements View.OnClickListener {
 
         // 高度差1时绳索检查
         if (deltaHeight == 1) {
-            // 关键修改：通过getDbHelper()访问dbHelper
-            Map<String, Integer> backpack = activity.dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
+            // 使用MainActivity中的背包数据，而不是从数据库获取
             boolean hasRope = false;
             String ropeType = "";
 
-            if (backpack != null) {
-                if (backpack.containsKey(ItemConstants.ITEM_GRASS_ROPE) && backpack.get(ItemConstants.ITEM_GRASS_ROPE) > 0) {
+            if (activity.backpack != null) {
+                if (activity.backpack.containsKey(ItemConstants.ITEM_GRASS_ROPE) && activity.backpack.get(ItemConstants.ITEM_GRASS_ROPE) > 0) {
                     ropeType = ItemConstants.ITEM_GRASS_ROPE;
                     hasRope = true;
-                } else if (backpack.containsKey(ItemConstants.ITEM_REINFORCED_ROPE) && backpack.get(ItemConstants.ITEM_REINFORCED_ROPE) > 0) {
+                } else if (activity.backpack.containsKey(ItemConstants.ITEM_REINFORCED_ROPE) && activity.backpack.get(ItemConstants.ITEM_REINFORCED_ROPE) > 0) {
                     ropeType = ItemConstants.ITEM_REINFORCED_ROPE;
                     hasRope = true;
-                } else if (backpack.containsKey(ItemConstants.ITEM_HARD_ROPE) && backpack.get(ItemConstants.ITEM_HARD_ROPE) > 0) {
+                } else if (activity.backpack.containsKey(ItemConstants.ITEM_HARD_ROPE) && activity.backpack.get(ItemConstants.ITEM_HARD_ROPE) > 0) {
                     ropeType = ItemConstants.ITEM_HARD_ROPE;
                     hasRope = true;
                 }
@@ -164,8 +163,16 @@ public class EventHandler implements View.OnClickListener {
                 Log.i("MoveDebug", "使用绳索移动 - 当前位置(" + activity.currentX + "," + activity.currentY + ")高度: " + fromHeight + 
                         ", 目标位置(" + newX + "," + newY + ")高度: " + toHeight + ", 高度差: " + deltaHeight + 
                         ", 使用绳索: " + ropeType);
-                // 关键修改：通过getDbHelper()访问dbHelper
+                // 更新数据库和内存中的背包数据
                 activity.dataManager.getDbHelper().updateBackpackItem(MyApplication.currentUserId, ropeType, -1);
+                
+                // 同步更新内存中的背包数据
+                if (activity.backpack.containsKey(ropeType)) {
+                    int currentCount = activity.backpack.get(ropeType);
+                    if (currentCount > 0) {
+                        activity.backpack.put(ropeType, currentCount - 1);
+                    }
+                }
             }
         }
 

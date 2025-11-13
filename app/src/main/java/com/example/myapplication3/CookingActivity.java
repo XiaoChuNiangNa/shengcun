@@ -353,6 +353,15 @@ public class CookingActivity extends BaseActivity {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * 禁用系统返回键，只允许使用按钮返回
+     */
+    @Override
+    public void onBackPressed() {
+        // 空实现，禁用系统返回功能
+        // 用户只能通过页面上的返回按钮返回
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();

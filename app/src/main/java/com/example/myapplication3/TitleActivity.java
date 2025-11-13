@@ -39,15 +39,22 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
         android.util.Log.i("GameState", "  currentUserId: " + currentUserId);
         android.util.Log.i("GameState", "  MyApplication.currentUserId: " + MyApplication.currentUserId);
         
-        // 只有在明确开始游戏后才直接进入游戏
-        // 刚进入游戏时应该是未开始状态
-        if (isGameStarted && currentUserId != -1 && currentUserId == MyApplication.currentUserId) {
-            android.util.Log.i("GameState", "检测到游戏已开始，直接进入游戏");
+        // 修复：简化状态检测逻辑，确保一致性
+        // 只有游戏已开始且未结束时才直接进入游戏
+        if (isGameStarted && !gameStateManager.isGameEnded()) {
+            // 确保GameStateManager中的用户ID与MyApplication保持一致
+            if (currentUserId != MyApplication.currentUserId && MyApplication.currentUserId != -1) {
+                // 如果不一致，同步GameStateManager中的用户ID
+                gameStateManager.setCurrentUserId(MyApplication.currentUserId);
+                android.util.Log.i("GameState", "用户ID不一致，已同步修复");
+            }
+            
+            android.util.Log.i("GameState", "检测到游戏已开始且未结束，直接进入游戏");
             startActivity(new Intent(TitleActivity.this, MainActivity.class));
             finish();
             return;
         } else {
-            android.util.Log.i("GameState", "游戏未开始或用户不匹配，显示标题页");
+            android.util.Log.i("GameState", "游戏未开始或已结束，显示标题页");
         }
         
         setContentView(R.layout.activity_title);
@@ -96,8 +103,22 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
 
             if (currentUserId != -1) {
                 MyApplication.currentUserId = currentUserId;
-                // 显示难度设置弹窗
-                showDifficultyDialog();
+                
+                // 关键修复：同步设置GameStateManager中的用户ID
+                GameStateManager gameStateManager = GameStateManager.getInstance(this);
+                gameStateManager.setCurrentUserId(currentUserId);
+                
+                // 检查是否是首次游戏（简单模式未通关）
+                DBHelper dbHelper = DBHelper.getInstance(this);
+                boolean isFirstGame = !dbHelper.isEasyDifficultyCleared(currentUserId);
+                
+                if (isFirstGame) {
+                    // 首次游戏：自动进入简单模式，不显示难度选择弹窗
+                    startGameWithDifficulty("简单");
+                } else {
+                    // 非首次游戏：显示难度选择弹窗
+                    showDifficultyDialog();
+                }
             } else {
                 startActivity(new Intent(TitleActivity.this, LoginActivity.class));
             }
@@ -184,13 +205,43 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
         Button btnCancel = dialogView.findViewById(R.id.btn_cancel);
         Button btnConfirm = dialogView.findViewById(R.id.btn_confirm);
 
-        // 设置默认选中普通难度
-        rbNormal.setChecked(true);
+        // 检查用户通关状态，解锁相应难度
+        DBHelper dbHelper = DBHelper.getInstance(this);
+        int currentUserId = MyApplication.currentUserId;
+        boolean isEasyCleared = dbHelper.isEasyDifficultyCleared(currentUserId);
+        boolean isNormalCleared = false; // 需要检查普通难度是否通关
 
-        // 设置单选按钮的互斥逻辑
+        // 设置难度选项的可用性
+        // 简单难度始终可用
+        rbEasy.setEnabled(true);
+        rbEasy.setText("简单模式");
+        
+        // 普通难度：需要简单模式通关后解锁
+        if (isEasyCleared) {
+            rbNormal.setEnabled(true);
+            rbNormal.setText("普通模式");
+        } else {
+            rbNormal.setEnabled(false);
+            rbNormal.setText("普通模式 (需简单模式通关)");
+        }
+        
+        // 困难难度：需要普通模式通关后解锁
+        // 暂时设为不可用，因为我们没有普通难度通关的检查逻辑
+        rbHard.setEnabled(false);
+        rbHard.setText("困难模式 (需普通模式通关)");
+
+        // 设置默认选中简单难度
+        rbEasy.setChecked(true);
+
+        // 设置单选按钮的互斥逻辑（只允许选择已启用的选项）
         View.OnClickListener radioClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // 如果按钮不可用，则不执行任何操作
+                if (!((RadioButton) v).isEnabled()) {
+                    return;
+                }
+                
                 // 取消所有选中状态
                 rbEasy.setChecked(false);
                 rbNormal.setChecked(false);
@@ -241,11 +292,31 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
                 dialog.dismiss();
                 
                 // 开始游戏
-                startActivity(new Intent(TitleActivity.this, MainActivity.class));
+                startGameWithDifficulty(difficulty);
             }
         });
 
         dialog.show();
+    }
+
+    /**
+     * 使用指定难度开始游戏
+     */
+    private void startGameWithDifficulty(String difficulty) {
+        // 保存难度设置到SharedPreferences
+        SharedPreferences sp = getSharedPreferences("game_settings", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putString("difficulty", difficulty);
+        editor.apply();
+
+        // 设置游戏已开始状态
+        GameStateManager gameStateManager = GameStateManager.getInstance(TitleActivity.this);
+        gameStateManager.setGameStarted(true);
+
+        Toast.makeText(TitleActivity.this, "难度设置为：" + difficulty, Toast.LENGTH_SHORT).show();
+        
+        // 开始游戏
+        startActivity(new Intent(TitleActivity.this, MainActivity.class));
     }
 
     /**

@@ -136,10 +136,21 @@ public class SaveGameDialogFragment extends DialogFragment {
                 }
             }
 
-            Toast.makeText(getContext(), "已保存到存档位" + slotId, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "已保存到存档位" + slotId + "，即将退出游戏", Toast.LENGTH_SHORT).show();
 
-            // 延迟关闭，让用户看到更新后的按钮
-            new Handler(Looper.getMainLooper()).postDelayed(this::dismiss, 500);
+            // 延迟关闭并退出游戏，让用户看到保存成功提示
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                dismiss();
+                // 保存后正常退出游戏，保持游戏状态为"游戏中"
+                if (getActivity() != null) {
+                    // 设置游戏状态为已开始，确保下次登录时直接进入游戏
+                    GameStateManager gameStateManager = GameStateManager.getInstance(getContext());
+                    gameStateManager.setGameStarted(true);
+                    
+                    // 保存并退出到标题页
+                    getActivity().finish();
+                }
+            }, 1000);
 
         } catch (Exception e) {
             Toast.makeText(getContext(), "存档失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();

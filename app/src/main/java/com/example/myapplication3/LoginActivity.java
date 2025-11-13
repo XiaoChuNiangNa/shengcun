@@ -37,9 +37,22 @@ public class LoginActivity extends AppCompatActivity {
 
         if (userId != -1 && isRemembered) {
             MyApplication.currentUserId = userId;
-            startActivity(new Intent(this, TitleActivity.class));
-            finish();
-            return;
+            
+            // 检查游戏状态，如果游戏已开始且未结束，直接进入游戏
+            GameStateManager gameStateManager = GameStateManager.getInstance(this);
+            gameStateManager.setCurrentUserId(userId);
+            
+            if (gameStateManager.isGameStarted() && !gameStateManager.isGameEnded()) {
+                // 游戏进行中，直接进入游戏
+                startActivity(new Intent(this, MainActivity.class));
+                finish();
+                return;
+            } else {
+                // 游戏未开始或已结束，进入标题页
+                startActivity(new Intent(this, TitleActivity.class));
+                finish();
+                return;
+            }
         }
 
         setContentView(R.layout.activity_login);
@@ -168,7 +181,15 @@ public class LoginActivity extends AppCompatActivity {
         editor.putBoolean("is_remembered", cbRememberMe.isChecked());
         editor.apply();
 
-        startActivity(new Intent(this, TitleActivity.class));
+        // 检查游戏状态，如果游戏已开始且未结束，直接进入游戏
+        if (gameStateManager.isGameStarted() && !gameStateManager.isGameEnded()) {
+            // 游戏进行中，直接进入游戏
+            startActivity(new Intent(this, MainActivity.class));
+        } else {
+            // 游戏未开始或已结束，进入标题页
+            startActivity(new Intent(this, TitleActivity.class));
+        }
+        
         finish();
         Toast.makeText(this, "感谢游玩小厨娘的小游戏", Toast.LENGTH_SHORT).show();
     }

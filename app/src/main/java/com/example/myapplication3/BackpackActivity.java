@@ -406,20 +406,21 @@ public class BackpackActivity extends AppCompatActivity {
                 // 获取目标物品当前数量
                 int targetCount = dbHelper.getBackpackItemCount(MyApplication.currentUserId, targetItemName);
                 
-                // 保存目标物品信息
-                String tempItemName = movingItemName;
-                int tempItemCount = movingItemCount;
+                // 保存源物品信息（因为movingItemName变量在后续操作中会被重置）
+                String sourceItemName = movingItemName;
+                int sourceItemCount = movingItemCount;
                 
-                // 交换物品：将源物品替换为目标物品
+                // 交换物品：正确交换位置和数量
                 if (targetCount > 0) {
-                    // 删除源物品
-                    dbHelper.deleteBackpackItem(MyApplication.currentUserId, movingItemName);
-                    // 添加目标物品到源位置
-                    dbHelper.addBackpackItem(MyApplication.currentUserId, tempItemName, targetCount);
-                    // 删除原目标物品
+                    // 正确的交换逻辑：
+                    // 1. 先删除源物品
+                    dbHelper.deleteBackpackItem(MyApplication.currentUserId, sourceItemName);
+                    // 2. 删除目标物品
                     dbHelper.deleteBackpackItem(MyApplication.currentUserId, targetItemName);
-                    // 添加源物品到目标位置
-                    dbHelper.addBackpackItem(MyApplication.currentUserId, targetItemName, tempItemCount);
+                    // 3. 将源物品添加到目标位置
+                    dbHelper.addBackpackItem(MyApplication.currentUserId, sourceItemName, sourceItemCount);
+                    // 4. 将目标物品添加到源位置
+                    dbHelper.addBackpackItem(MyApplication.currentUserId, targetItemName, targetCount);
                 } else {
                     // 如果目标位置为空，直接移动物品
                     dbHelper.addBackpackItem(MyApplication.currentUserId, targetItemName, movingItemCount);

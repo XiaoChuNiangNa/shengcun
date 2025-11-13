@@ -74,14 +74,11 @@ public class EquipmentActivity extends AppCompatActivity {
             if (backpackTools != null && !backpackTools.isEmpty()) {
                 // 直接使用返回的Equipment对象列表
                 equipmentList.addAll(backpackTools);
+                Log.i(TAG, "成功加载背包中的工具装备，数量: " + backpackTools.size());
             } else {
-                initTestEquipments(); // 异常时加载测试数据
+                // 背包中没有工具，显示空装备列表
+                Log.i(TAG, "背包中没有工具类物品");
             }
-
-//            // 确保默认均为未装备（覆盖可能的异常状态）
-//            for (Equipment equip : equipmentList) {
-//                equip.setEquipped(false);
-//            }
 
             // 确保最多只有一个装备处于激活状态
             ensureSingleEquipped();
@@ -93,7 +90,7 @@ public class EquipmentActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "加载装备数据失败", e);
             Toast.makeText(this, "装备数据加载失败", Toast.LENGTH_SHORT).show();
-            initTestEquipments();
+            // 异常情况下保持空列表，不加载测试数据
             adapter = new EquipmentGridAdapter(this, equipmentList);
             gvEquipment.setAdapter(adapter);
         }

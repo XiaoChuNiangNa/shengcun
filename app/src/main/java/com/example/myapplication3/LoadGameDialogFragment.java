@@ -1,6 +1,7 @@
 package com.example.myapplication3;
 
 import android.app.Dialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -90,13 +91,11 @@ public class LoadGameDialogFragment extends DialogFragment {
             
             // 延迟关闭，让用户看到成功提示
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                // 通知主界面刷新坐标显示
-                if (getActivity() instanceof MainActivity) {
-                    MainActivity mainActivity = (MainActivity) getActivity();
-                    mainActivity.refreshCoordinatesAfterLoad();
-                }
-                
+                // 重新启动MainActivity以加载存档的坐标数据
                 if (getActivity() != null) {
+                    Intent intent = new Intent(getActivity(), MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
                     getActivity().finish();
                 }
                 dismiss();

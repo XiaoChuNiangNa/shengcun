@@ -745,6 +745,15 @@ public class BuildingActivity extends BaseActivity {
         return getIntent().getBooleanExtra("from_base", false);
     }
 
+    /**
+     * 禁用系统返回键，只允许使用按钮返回
+     */
+    @Override
+    public void onBackPressed() {
+        // 空实现，禁用系统返回功能
+        // 用户只能通过页面上的返回按钮返回
+    }
+
     // 安全的异步任务类 - 建筑状态保存
     private static class BuildingStateSaveTask extends AsyncTask<Void, Void, Boolean> {
         private WeakReference<BuildingActivity> activityRef;

@@ -71,13 +71,9 @@ public class GameStateManager {
      * 检查游戏是否已开始
      */
     public boolean isGameStarted() {
-        // 游戏开始的判断逻辑：
-        // 1. 有明确的游戏开始标志
-        // 2. 游戏未结束
-        // 3. 有有效的用户ID
-        return sharedPreferences.getBoolean("game_started", false) && 
-               !isGameEnded() && 
-               getCurrentUserId() != -1;
+        // 简化游戏开始判断逻辑：
+        // 只要有明确的游戏开始标志就认为是游戏已开始
+        return sharedPreferences.getBoolean("game_started", false);
     }
     
     /**
@@ -105,15 +101,6 @@ public class GameStateManager {
         editor.putInt("current_user_id", userId);
         editor.apply();
     }
-    
-    /**
-     * 设置游戏开始状态
-     */
-//    public void setGameStarted(boolean started) {
-//        SharedPreferences.Editor editor = sharedPreferences.edit();
-//        editor.putBoolean("game_started", started);
-//        editor.apply();
-//    }
     
     /**
      * 检查指定用户是否在游戏中

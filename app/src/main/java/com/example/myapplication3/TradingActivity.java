@@ -81,7 +81,7 @@ public class TradingActivity extends BaseActivity {
             editor.apply();
             
             // 调试信息
-            showToast("首次进入或刷新间隔已到，重新生成贸易选项");
+//            showToast("首次进入或刷新间隔已到，重新生成贸易选项");
         } else {
             // 如果时间未到，尝试加载已保存的贸易选项
             loadSavedTradeOptions();
@@ -160,6 +160,15 @@ public class TradingActivity extends BaseActivity {
 
     protected boolean isFromBase() {
         return getIntent().getBooleanExtra("from_base", false);
+    }
+
+    /**
+     * 禁用系统返回键，只允许使用按钮返回
+     */
+    @Override
+    public void onBackPressed() {
+        // 空实现，禁用系统返回功能
+        // 用户只能通过页面上的返回按钮返回
     }
     
     /**

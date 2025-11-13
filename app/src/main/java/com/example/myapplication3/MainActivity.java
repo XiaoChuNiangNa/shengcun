@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.activity.OnBackPressedCallback;
 import androidx.core.content.ContextCompat;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Collections;
@@ -42,6 +43,9 @@ public class MainActivity extends BaseActivity {
     public int lastRefreshDay = 0;
     public boolean isNeedReloadData = false;
     public boolean isBackPressedEnabled = true;
+    
+    // 背包数据
+    public Map<String, Integer> backpack = new HashMap<>();
 
     // 视图控件
     public TextView tvAreaInfo, tvLife, tvHunger, tvThirst, tvStamina, tvTip;
@@ -69,16 +73,30 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initCurrentUserId();
+        
+        // 确保用户ID一致性
+        GameStateManager gameStateManager = GameStateManager.getInstance(this);
+        
+        // 如果MyApplication中的用户ID为空，尝试从GameStateManager获取
         if (MyApplication.currentUserId == -1) {
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
-            return;
+            int storedUserId = gameStateManager.getCurrentUserId();
+            if (storedUserId != -1) {
+                MyApplication.currentUserId = storedUserId;
+            } else {
+                // 如果都没有用户ID，需要登录
+                startActivity(new Intent(this, LoginActivity.class));
+                finish();
+                return;
+            }
         }
-
+        
+        // 确保GameStateManager中的用户ID与MyApplication一致
+        currentUserId = MyApplication.currentUserId;
+        gameStateManager.setCurrentUserId(currentUserId);
+        
         // 先检查死亡状态，如果死亡则重置游戏状态
         DataManager tempDataManager = new DataManager(this);
-        Map<String, Object> userStatus = tempDataManager.getDbHelper().getUserStatus(MyApplication.currentUserId);
+        Map<String, Object> userStatus = tempDataManager.getDbHelper().getUserStatus(currentUserId);
         int lifeFromDB = userStatus != null && userStatus.containsKey("life") ? (int) userStatus.get("life") : Constant.INIT_LIFE;
         
         // 如果生命值为0（死亡状态），自动重置游戏状态
@@ -86,25 +104,22 @@ public class MainActivity extends BaseActivity {
             Log.i("MainActivity", "检测到死亡状态，重置游戏状态");
             
             // 重置游戏数据
-            tempDataManager.resetGameData(MyApplication.currentUserId);
+            tempDataManager.resetGameData(currentUserId);
             
             // 重置游戏状态管理器
-            GameStateManager gameStateManager = GameStateManager.getInstance(this);
             gameStateManager.resetGame();
             
             // 设置游戏开始状态为true，允许重新开始游戏
             gameStateManager.setGameStarted(true);
-            gameStateManager.setCurrentUserId(MyApplication.currentUserId);
+            gameStateManager.setCurrentUserId(currentUserId);
             
             Log.i("MainActivity", "死亡状态处理完成，游戏状态已重置");
         }
         
-        // 然后验证游戏状态一致性
-        GameStateManager gameStateManager = GameStateManager.getInstance(this);
+        // 验证游戏状态一致性
         boolean isGameStarted = gameStateManager.isGameStarted();
-        int currentUserId = gameStateManager.getCurrentUserId();
         
-        if (!isGameStarted || currentUserId != MyApplication.currentUserId) {
+        if (!isGameStarted) {
             Toast.makeText(this, "游戏状态异常，返回标题页", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, TitleActivity.class));
             finish();
@@ -136,7 +151,10 @@ public class MainActivity extends BaseActivity {
 
         // 加载数据
         dataManager.loadGameData();
-
+        
+        // 加载背包数据到内存
+        reloadBackpack();
+        
         // 启动定时器
         timeManager.startCDRefresh();
         timeManager.startTimeUpdates();
@@ -216,6 +234,27 @@ public class MainActivity extends BaseActivity {
     }
 
     /**
+     * 重新加载背包数据
+     */
+    private void reloadBackpack() {
+        // 从数据库重新加载背包数据
+        Map<String, Integer> newBackpack = dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
+        if (newBackpack != null) {
+            backpack.clear();
+            backpack.putAll(newBackpack);
+            Log.d("BackpackSync", "背包数据已重新加载，物品数量: " + backpack.size());
+        } else {
+            backpack.clear();
+            Log.w("BackpackSync", "背包数据为空，已清空背包");
+        }
+        
+        // 通知UI更新
+        if (uiUpdater != null) {
+            uiUpdater.updateStatusDisplays();
+        }
+    }
+    
+    /**
      * 重新加载用户状态（生命、饥饿、口渴、体力等）
      */
     private void reloadUserStatus() {
@@ -227,10 +266,30 @@ public class MainActivity extends BaseActivity {
             thirst = (int) userStatus.get("thirst");
             stamina = (int) userStatus.get("stamina");
             
-            Log.d("StatusSync", "重新加载用户状态: 生命=" + life + ", 饥饿=" + hunger + ", 口渴=" + thirst + ", 体力=" + stamina);
+            // 加载存档的坐标数据
+            int savedX = (int) userStatus.get("current_x");
+            int savedY = (int) userStatus.get("current_y");
+            
+            // 只有当坐标发生变化时才更新
+            if (currentX != savedX || currentY != savedY) {
+                currentX = savedX;
+                currentY = savedY;
+                
+                // 强制刷新背景视图显示存档坐标
+                if (backgroundView != null) {
+                    backgroundView.setCurrentCoord(savedX, savedY, true);
+                    backgroundView.invalidate();
+                    backgroundView.postInvalidate();
+                }
+                
+                Log.d("CoordSync", "坐标已从存档加载: (" + savedX + ", " + savedY + ")");
+            }
+            
+            Log.d("StatusSync", "重新加载用户状态: 生命=" + life + ", 饥饿=" + hunger + ", 口渴=" + thirst + ", 体力=" + stamina + ", 坐标=(" + currentX + ", " + currentY + ")");
             
             // 刷新状态显示 - 使用正确的方法名
             if (uiUpdater != null) {
+                uiUpdater.updateAreaInfo();
                 uiUpdater.updateStatusDisplays();
             }
         }
@@ -393,10 +452,16 @@ public class MainActivity extends BaseActivity {
             if (savedLife > 0) {
                 life = savedLife;
                 
+                // 恢复坐标数据到存档时的状态
+                int savedX = (int) userStatus.get("current_x");
+                int savedY = (int) userStatus.get("current_y");
+                currentX = savedX;
+                currentY = savedY;
+                
                 // 更新数据库
                 dataManager.getDbHelper().updateUserStatus(currentUserId, Collections.singletonMap("life", life));
                 
-                Log.i("GameOver", "读档成功，生命值恢复为：" + life);
+                Log.i("GameOver", "读档成功，生命值恢复为：" + life + ", 坐标恢复为：(" + savedX + ", " + savedY + ")");
                 
                 // 移除游戏结束覆盖层
                 removeGameOverOverlay();
@@ -404,8 +469,20 @@ public class MainActivity extends BaseActivity {
                 // 重新启用交互
                 enableAllInteractions();
                 
+                // 强制刷新背景视图显示存档坐标
+                if (backgroundView != null) {
+                    backgroundView.setCurrentCoord(savedX, savedY, true);
+                    // 确保界面立即重绘
+                    backgroundView.invalidate();
+                    backgroundView.postInvalidate();
+                }
+                
+                // 重新加载背包数据，确保物资正确显示
+                reloadBackpack();
+                
                 // 刷新UI显示
                 if (uiUpdater != null) {
+                    uiUpdater.updateAreaInfo();
                     uiUpdater.updateStatusDisplays();
                 }
                 
@@ -491,12 +568,34 @@ public class MainActivity extends BaseActivity {
                     // 显示存档选择对话框
                     new SaveGameDialogFragment().show(getSupportFragmentManager(), "save_game");
                 })
-                .setNegativeButton("直接退出", (dialog, which) -> {
-                    // 直接退出游戏
-                    finish();
+                .setNegativeButton("放弃", (dialog, which) -> {
+                    // 放弃游戏，判定游戏失败
+                    handleGameAbandon();
                 })
                 .setNeutralButton("取消", null)
                 .show();
+    }
+    
+    /**
+     * 处理放弃游戏逻辑
+     */
+    private void handleGameAbandon() {
+        // 设置游戏结束状态，同时重置游戏开始状态
+        GameStateManager gameStateManager = GameStateManager.getInstance(this);
+        gameStateManager.setGameEnded();
+        gameStateManager.setGameStarted(false); // 重置游戏开始状态
+        
+        // 重置游戏数据
+        dataManager.resetGameData(currentUserId);
+        
+        // 关键修复：重置MyApplication中的用户ID，确保下次启动时重新初始化
+        MyApplication.currentUserId = -1;
+        
+        // 返回标题页
+        Intent intent = new Intent(this, TitleActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
     }
 
     /**
@@ -580,6 +679,30 @@ public class MainActivity extends BaseActivity {
             checkPortalInteraction();
             
             Log.d("MainActivity", "读档后坐标已刷新: (" + currentX + ", " + currentY + ")");
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        // 处理战斗返回结果
+        if (resultCode == RESULT_OK && data != null) {
+            String battleResult = data.getStringExtra("battle_result");
+            if ("victory".equals(battleResult)) {
+                // 战斗胜利，重新加载背包数据
+                Log.d("BattleResult", "战斗胜利，重新加载背包数据");
+                reloadBackpack();
+                
+                // 显示战斗胜利提示
+                String animalName = data.getStringExtra("animal_name");
+                Toast.makeText(this, "成功击败" + animalName + "，战利品已添加到背包！", Toast.LENGTH_SHORT).show();
+                
+                // 更新UI显示
+                if (uiUpdater != null) {
+                    uiUpdater.updateStatusDisplays();
+                }
+            }
         }
     }
 

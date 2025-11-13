@@ -144,7 +144,20 @@ public class DataManager {
             activity.stamina = Constant.INIT_STAMINA;
             activity.gold = 0;
             activity.backpackCap = 10;
-            activity.difficulty = "normal";
+            
+            // 从SharedPreferences读取正确的难度设置
+            android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
+            String difficultyFromPrefs = sp.getString("difficulty", "简单");
+            
+            // 将中文难度转换为数据库存储格式
+            if ("简单".equals(difficultyFromPrefs)) {
+                activity.difficulty = Constant.DIFFICULTY_EASY;
+            } else if ("困难".equals(difficultyFromPrefs)) {
+                activity.difficulty = Constant.DIFFICULTY_HARD;
+            } else {
+                activity.difficulty = Constant.DIFFICULTY_NORMAL; // 默认使用普通模式
+            }
+            
             activity.firstCollectTime = 0;
             activity.currentEquip = "";
 
@@ -220,7 +233,20 @@ public class DataManager {
         activity.stamina = Constant.INIT_STAMINA;
         activity.gold = 0;
         activity.backpackCap = 10;
-        activity.difficulty = "normal";
+        
+        // 从SharedPreferences读取正确的难度设置
+        android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
+        String difficultyFromPrefs = sp.getString("difficulty", "简单");
+        
+        // 将中文难度转换为数据库存储格式
+        if ("简单".equals(difficultyFromPrefs)) {
+            activity.difficulty = Constant.DIFFICULTY_EASY;
+        } else if ("困难".equals(difficultyFromPrefs)) {
+            activity.difficulty = Constant.DIFFICULTY_HARD;
+        } else {
+            activity.difficulty = Constant.DIFFICULTY_NORMAL; // 默认使用普通模式
+        }
+        
         activity.firstCollectTime = 0;
         activity.currentEquip = "";
 

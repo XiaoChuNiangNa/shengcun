@@ -849,29 +849,29 @@ public class DBHelper extends SQLiteOpenHelper {
             userStatus.put("first_collect_time", 0);
             db.insert("user_status", null, userStatus);
 
-            // 初始装备：石斧（存入背包，工具类）
-            ContentValues backpack = new ContentValues();
-            backpack.put("user_id", userId);
-            backpack.put("item_type", ItemConstants.EQUIP_STONE_AXE);
-            backpack.put("item_count", 1); // 数量1
-            backpack.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_AXE)); // 假设10
-            db.insert("backpack", null, backpack);
-
-            // 初始装备：石镐（存入背包，工具类）
-            backpack.clear();
-            backpack.put("user_id", userId);
-            backpack.put("item_type", ItemConstants.EQUIP_STONE_PICKAXE);
-            backpack.put("item_count", 1);
-            backpack.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_PICKAXE)); // 假设10
-            db.insert("backpack", null, backpack);
-
-            // 干面包（存入背包，消耗品）
-            backpack.clear();
-            backpack.put("user_id", userId);
-            backpack.put("item_type", ItemConstants.ITEM_DRIED_BREAD);
-            backpack.put("item_count", 2);
-            backpack.put("durability", 0);
-            db.insert("backpack", null, backpack);
+//            // 初始装备：石斧（存入背包，工具类）
+//            ContentValues backpack = new ContentValues();
+//            backpack.put("user_id", userId);
+//            backpack.put("item_type", ItemConstants.EQUIP_STONE_AXE);
+//            backpack.put("item_count", 1); // 数量1
+//            backpack.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_AXE)); // 假设10
+//            db.insert("backpack", null, backpack);
+//
+//            // 初始装备：石镐（存入背包，工具类）
+//            backpack.clear();
+//            backpack.put("user_id", userId);
+//            backpack.put("item_type", ItemConstants.EQUIP_STONE_PICKAXE);
+//            backpack.put("item_count", 1);
+//            backpack.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_PICKAXE)); // 假设10
+//            db.insert("backpack", null, backpack);
+//
+//            // 干面包（存入背包，消耗品）
+//            backpack.clear();
+//            backpack.put("user_id", userId);
+//            backpack.put("item_type", ItemConstants.ITEM_DRIED_BREAD);
+//            backpack.put("item_count", 2);
+//            backpack.put("durability", 0);
+//            db.insert("backpack", null, backpack);
         } finally {
 
         }
@@ -3153,41 +3153,41 @@ public class DBHelper extends SQLiteOpenHelper {
      * 为普通账号添加初始物资（石斧、石镐、干面包等）
      */
     private void addNormalInitialItems(SQLiteDatabase db, int userId) {
-        // 初始装备：石斧（工具类）
-        ContentValues axe = new ContentValues();
-        axe.put("user_id", userId);
-        axe.put("item_type", ItemConstants.EQUIP_STONE_AXE);
-        axe.put("item_count", 1);
-        axe.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_AXE)); // 假设初始耐久10
-        axe.put("is_equipped", 0); // 默认未装备
-        db.insert("backpack", null, axe);
-
-        // 初始装备：石镐（工具类）
-        ContentValues pickaxe = new ContentValues();
-        pickaxe.put("user_id", userId);
-        pickaxe.put("item_type", ItemConstants.EQUIP_STONE_PICKAXE);
-        pickaxe.put("item_count", 1);
-        pickaxe.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_PICKAXE)); // 假设初始耐久10
-        pickaxe.put("is_equipped", 0);
-        db.insert("backpack", null, pickaxe);
-
-        // 基础生存物资：干面包
-        ContentValues bread = new ContentValues();
-        bread.put("user_id", userId);
-        bread.put("item_type", ItemConstants.ITEM_DRIED_BREAD);
-        bread.put("item_count", 2);
-        bread.put("durability", 0);
-        bread.put("is_equipped", 0);
-        db.insert("backpack", null, bread);
-
-        // 其他必要初始资源（如木材、石头等，根据需求添加）
-        ContentValues wood = new ContentValues();
-        wood.put("user_id", userId);
-        wood.put("item_type", ItemConstants.ITEM_WOOD);
-        wood.put("item_count", 10);
-        wood.put("durability", 0);
-        wood.put("is_equipped", 0);
-        db.insert("backpack", null, wood);
+//        // 初始装备：石斧（工具类）
+//        ContentValues axe = new ContentValues();
+//        axe.put("user_id", userId);
+//        axe.put("item_type", ItemConstants.EQUIP_STONE_AXE);
+//        axe.put("item_count", 1);
+//        axe.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_AXE)); // 假设初始耐久10
+//        axe.put("is_equipped", 0); // 默认未装备
+//        db.insert("backpack", null, axe);
+//
+//        // 初始装备：石镐（工具类）
+//        ContentValues pickaxe = new ContentValues();
+//        pickaxe.put("user_id", userId);
+//        pickaxe.put("item_type", ItemConstants.EQUIP_STONE_PICKAXE);
+//        pickaxe.put("item_count", 1);
+//        pickaxe.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_PICKAXE)); // 假设初始耐久10
+//        pickaxe.put("is_equipped", 0);
+//        db.insert("backpack", null, pickaxe);
+//
+//        // 基础生存物资：干面包
+//        ContentValues bread = new ContentValues();
+//        bread.put("user_id", userId);
+//        bread.put("item_type", ItemConstants.ITEM_DRIED_BREAD);
+//        bread.put("item_count", 2);
+//        bread.put("durability", 0);
+//        bread.put("is_equipped", 0);
+//        db.insert("backpack", null, bread);
+//
+//        // 其他必要初始资源（如木材、石头等，根据需求添加）
+//        ContentValues wood = new ContentValues();
+//        wood.put("user_id", userId);
+//        wood.put("item_type", ItemConstants.ITEM_WOOD);
+//        wood.put("item_count", 10);
+//        wood.put("durability", 0);
+//        wood.put("is_equipped", 0);
+//        db.insert("backpack", null, wood);
     }
 
     /**

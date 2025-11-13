@@ -623,10 +623,10 @@ public class AchievementManager {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         
         try {
-            // 查询当前成就的进度
+            // 查询当前成就的进度 - 修正字段名：使用achievement_type而不是category
             Cursor cursor = db.query("achievements", 
                     new String[]{"progress", "is_completed"}, 
-                    "user_id = ? AND category = ? AND level = ?", 
+                    "user_id = ? AND achievement_type = ? AND level = ?", 
                     new String[]{String.valueOf(userId), category, String.valueOf(level)}, 
                     null, null, null);
             
@@ -647,7 +647,7 @@ public class AchievementManager {
                     }
                     
                     db.update("achievements", values, 
-                            "user_id = ? AND category = ? AND level = ?", 
+                            "user_id = ? AND achievement_type = ? AND level = ?", 
                             new String[]{String.valueOf(userId), category, String.valueOf(level)});
                     
                     Log.d("AchievementManager", "更新成就进度: " + category + " Lv" + level + " -> " + currentProgress);

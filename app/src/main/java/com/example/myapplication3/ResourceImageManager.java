@@ -76,6 +76,7 @@ public class ResourceImageManager {
         itemImageMap.put(ItemConstants.ITEM_POTATO, R.drawable.tudou);              // 土豆
         itemImageMap.put(ItemConstants.ITEM_IRON_INGOT, R.drawable.tieding);           // 铁锭
         itemImageMap.put(ItemConstants.ITEM_GOLD, R.drawable.huangjin);                 // 黄金
+        itemImageMap.put(ItemConstants.ITEM_SMALL_STONE, R.drawable.xiaoshizi);         //小石子
 
         // 工具装备类（14种）
         itemImageMap.put(ItemConstants.EQUIP_STONE_PICKAXE, R.drawable.shigao);         // 石镐

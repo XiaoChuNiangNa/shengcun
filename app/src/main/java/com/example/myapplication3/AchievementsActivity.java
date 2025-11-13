@@ -80,7 +80,6 @@ public class AchievementsActivity extends AppCompatActivity {
         displayAchievementGroup("贸易大师", achievements, "trading");
         displayAchievementGroup("轮回之路", achievements, "reincarnation");
         displayAchievementGroup("生存之路", achievements, "survival");
-        displayAchievementGroup("生存之路", achievements, "survival");
     }
 
     private void displayAchievementGroup(String groupTitle, List<AchievementItem> achievements, String achievementType) {
