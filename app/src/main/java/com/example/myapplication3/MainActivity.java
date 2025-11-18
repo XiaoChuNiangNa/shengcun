@@ -15,6 +15,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,9 +25,6 @@ import androidx.core.content.ContextCompat;
 import java.util.Map;
 import java.util.Random;
 import java.util.Collections;
-import android.widget.Toast;
-import java.util.Collections;
-import android.widget.Toast;
 
 public class MainActivity extends BaseActivity {
     // 核心成员变量
@@ -168,9 +166,7 @@ public class MainActivity extends BaseActivity {
         });
     }
 
-    private void initCurrentUserId() {
-        currentUserId = MyApplication.currentUserId;
-    }
+
 
     @Override
     protected void onResume() {
@@ -262,8 +258,10 @@ public class MainActivity extends BaseActivity {
     }
 
     public static int currentUserId = -1;
-
-
+    
+    private void initCurrentUserId() {
+        currentUserId = MyApplication.currentUserId;
+    }
 
     /**
      * 显示游戏结束界面
