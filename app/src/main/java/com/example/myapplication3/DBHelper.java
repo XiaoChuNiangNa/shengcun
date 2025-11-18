@@ -254,20 +254,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 ")");
     }
 
-    /**
-     * 创建成就表
-     */
-    private void createAchievementsTable(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS achievements (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "user_id INTEGER NOT NULL," +
-                "achievement_type TEXT NOT NULL," +
-                "level INTEGER NOT NULL DEFAULT 1," +
-                "progress INTEGER NOT NULL DEFAULT 0," +
-                "is_completed INTEGER NOT NULL DEFAULT 0," +
-                "is_claimed INTEGER NOT NULL DEFAULT 0," +
-                "FOREIGN KEY(user_id) REFERENCES user(id))");
-    }
+    // achievements表在onCreate中已创建，此处移除重复方法
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
