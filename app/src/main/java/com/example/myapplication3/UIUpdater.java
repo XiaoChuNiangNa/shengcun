@@ -1,6 +1,7 @@
 package com.example.myapplication3;
 
 import android.animation.ValueAnimator;
+import android.util.Log;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -107,38 +108,79 @@ public class UIUpdater {
 
     // 更新生存状态显示
     public void updateStatusDisplays() {
-        // 生命
+        // 关键修复：避免在初始化时误判死亡状态
+        // 只在游戏真正开始后检查死亡状态
+        GameStateManager gameStateManager = GameStateManager.getInstance(activity);
+        boolean isGameStarted = gameStateManager.isGameStarted();
+        
+        // 增加数据完整性检查 - 只在数据加载完成后执行死亡检查
+        // 如果UIUpdater创建时活动属性还没初始化完成，跳过死亡检查
+        if (activity.life == 0 && !activity.isDataLoaded) {
+            Log.d("GameOverCheck", "数据加载中，跳过死亡检查 (生命值=" + activity.life + ", isDataLoaded=" + activity.isDataLoaded + ")");
+            // 仅更新UI显示，不进行死亡判定
+            updateLifeDisplay();
+        } else {
+            // 正常更新所有状态显示
+            updateLifeDisplay();
+            
+            // 添加详细的生命值检查日志
+            Log.d("GameOverCheck", "详细检查死亡条件:");
+            Log.d("GameOverCheck", "  - 当前生命值: " + activity.life);
+            Log.d("GameOverCheck", "  - 游戏开始状态: " + isGameStarted);
+            Log.d("GameOverCheck", "  - 生命值<=0: " + (activity.life <= 0));
+            Log.d("GameOverCheck", "  - 综合条件 (isGameStarted && life<=0): " + (isGameStarted && activity.life <= 0));
+
+            // 关键修复：只在游戏已开始且生命值<=0时触发游戏结束
+            if (isGameStarted && activity.life <= 0) {
+                Log.i("GameOverTrigger", "触发游戏结束条件: 游戏已开始且生命值<=0 (生命值=" + activity.life + ")");
+                activity.handler.postDelayed(() -> {
+                    if (!activity.isFinishing()) {
+                        activity.showGameOverScreen();
+                    }
+                }, 100);
+                return;
+            } else if (isGameStarted && activity.life > 0) {
+                Log.d("GameOverCheck", "游戏进行中，生命值正常 (" + activity.life + ")");
+            } else if (!isGameStarted) {
+                Log.d("GameOverCheck", "游戏未开始，不检查死亡状态");
+            }
+        }
+        
+        // 更新其他状态显示
+        updateHungerDisplay();
+        updateThirstDisplay();
+        updateStaminaDisplay();
+    }
+
+    // 更新生命显示
+    private void updateLifeDisplay() {
         activity.life = Math.max(0, Math.min(100, activity.life));
         activity.tvLife.setText("生命：" + activity.life);
         activity.tvLife.setTextColor(activity.life <= 30 ?
                 activity.getResources().getColor(android.R.color.holo_red_dark) :
                 activity.getResources().getColor(android.R.color.holo_green_dark));
+    }
 
-        // 检查生命值是否为0，触发游戏结束
-        if (activity.life <= 0) {
-            activity.handler.postDelayed(() -> {
-                if (!activity.isFinishing()) {
-                    activity.showGameOverScreen();
-                }
-            }, 100);
-            return;
-        }
-
-        // 饥饿
+    // 更新饥饿显示
+    private void updateHungerDisplay() {
         activity.hunger = Math.max(0, Math.min(100, activity.hunger));
         activity.tvHunger.setText("饥饿：" + activity.hunger);
         activity.tvHunger.setTextColor(activity.hunger <= 20 ?
                 activity.getResources().getColor(android.R.color.holo_red_dark) :
                 activity.getResources().getColor(android.R.color.holo_orange_dark));
+    }
 
-        // 口渴
+    // 更新口渴显示
+    private void updateThirstDisplay() {
         activity.thirst = Math.max(0, Math.min(100, activity.thirst));
         activity.tvThirst.setText("口渴：" + activity.thirst);
         activity.tvThirst.setTextColor(activity.thirst <= 20 ?
                 activity.getResources().getColor(android.R.color.holo_red_dark) :
                 activity.getResources().getColor(android.R.color.holo_blue_light));
+    }
 
-        // 体力
+    // 更新体力显示
+    private void updateStaminaDisplay() {
         activity.stamina = Math.max(0, Math.min(100, activity.stamina));
         activity.tvStamina.setText("体力：" + activity.stamina);
         activity.tvStamina.setTextColor(activity.stamina <= 20 ?

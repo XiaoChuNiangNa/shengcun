@@ -17,7 +17,7 @@ import java.util.Map;
 public class ReincarnationActivity extends BaseActivity {
     
     // 不同难度下的轮回天数要求
-    private static final int EASY_MIN_DAYS = 5;    // 简单模式至少5天
+    private static final int EASY_MIN_DAYS = 2;    // 简单模式至少2天
     private static final int NORMAL_MIN_DAYS = 10;  // 普通模式至少10天
     private static final int HARD_MIN_DAYS = 15;    // 困难模式至少15天
 

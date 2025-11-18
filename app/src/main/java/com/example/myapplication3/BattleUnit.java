@@ -16,8 +16,8 @@ public class BattleUnit {
     private PlayerStats stats; // 属性系统
     
     // 攻击冷却系统
-    private int attackCooldown;
-    private int maxAttackCooldown;
+    private float attackProgress;      // 当前攻击进度
+    private int maxAttackProgress;      // 攻击进度上限（双方最高速度）
     private boolean isReadyToAttack = false;
     
     // 技能系统
@@ -76,11 +76,9 @@ public class BattleUnit {
      * 根据速度初始化攻击冷却系统
      */
     private void initAttackCooldown() {
-        // 将攻击间隔（秒）转换为游戏内的冷却回合数
-        // 假设1回合 = 1秒，这里使用10个时间单位代表1秒，便于游戏内显示
-        double attackInterval = stats.getAttackInterval();
-        this.maxAttackCooldown = (int) (attackInterval * 10);
-        this.attackCooldown = 0;
+        // 攻击进度上限将根据双方最高速度在外部设置
+        this.maxAttackProgress = 100; // 默认值，会被覆盖
+        this.attackProgress = 0;
         this.isReadyToAttack = false;
     }
     
@@ -91,7 +89,7 @@ public class BattleUnit {
     public int attack() {
         if (isReadyToAttack) {
             isReadyToAttack = false;
-            attackCooldown = maxAttackCooldown;
+            attackProgress = 0; // 重置进度
             
             // 基础攻击力 + 随机浮动（±20%）
             int baseAttack = stats.getAttack();
@@ -126,17 +124,22 @@ public class BattleUnit {
      * 更新冷却系统（每个游戏回合调用）
      */
     public void updateCooldowns() {
-        // 更新攻击冷却
-        if (attackCooldown > 0) {
-            attackCooldown--;
-            if (attackCooldown <= 0) {
+        // 更新攻击进度 - 根据速度增加进度
+        if (!isReadyToAttack) {
+            // 进度增量 = 单位速度值
+            int speed = stats.getSpeed();
+            attackProgress += speed;
+            
+            // 当进度达到上限时，可以攻击
+            if (attackProgress >= maxAttackProgress) {
+                attackProgress = maxAttackProgress;
                 isReadyToAttack = true;
             }
         }
         
         // 更新技能冷却
         for (BattleSkill skill : skills) {
-            if (skill.currentCooldown > 0) {
+            if (skill != null && skill.currentCooldown > 0) {
                 skill.currentCooldown--;
             }
         }
@@ -207,7 +210,7 @@ public class BattleUnit {
     }
     
     public int getAttackCooldownPercentage() {
-        return stats.getAttackCooldownPercentage(attackCooldown, maxAttackCooldown);
+        return stats.getAttackCooldownPercentage(attackProgress, maxAttackProgress);
     }
     
     public int getAttackCooldownPercent() {
@@ -226,7 +229,7 @@ public class BattleUnit {
     
     // 添加缺失的方法
     public void resetCooldowns() {
-        attackCooldown = 0;
+        attackProgress = 0;
         isReadyToAttack = true;
         for (BattleSkill skill : skills) {
             if (skill != null) {
@@ -245,6 +248,27 @@ public class BattleUnit {
     
     public int getSpeed() {
         return stats.getSpeed();
+    }
+    
+    /**
+     * 获取攻击进度上限
+     */
+    public int getMaxAttackCooldown() {
+        return maxAttackProgress;
+    }
+    
+    /**
+     * 获取当前攻击进度
+     */
+    public float getCurrentAttackCooldown() {
+        return attackProgress;
+    }
+    
+    /**
+     * 设置攻击进度上限（由外部根据双方最高速度设置）
+     */
+    public void setMaxAttackCooldown(int maxProgress) {
+        this.maxAttackProgress = maxProgress;
     }
     
     public int getType() {

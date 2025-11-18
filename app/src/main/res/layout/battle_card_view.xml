@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="100dp"
+    android:layout_height="200dp"
+    android:layout_margin="4dp"
+    android:background="@drawable/player_card_bg">
+
+    <!-- 单位名称 -->
+    <TextView
+        android:id="@+id/card_name"
+        android:layout_width="match_parent"
+        android:layout_height="30dp"
+        android:background="#E3F2FD"
+        android:text="单位"
+        android:textColor="#000000"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:gravity="center" />
+
+    <!-- 普攻信息 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/attack_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="普攻"
+            android:textColor="#000000"
+            android:textSize="8sp"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/speed_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="速度: 100"
+            android:textColor="#666666"
+            android:textSize="6sp"
+            android:gravity="center" />
+
+        <ProgressBar
+            android:id="@+id/attack_progress"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:progress="0"
+            android:max="100"
+            android:layout_margin="5dp"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:progressDrawable="@drawable/progress_bar_attack" />
+
+    </LinearLayout>
+
+    <!-- 技能容器 -->
+    <LinearLayout
+        android:id="@+id/skill_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_marginEnd="6dp"
+        android:layout_marginTop="60dp"
+        android:orientation="vertical" />
+
+    <!-- 生命值条 -->
+    <ProgressBar
+        android:id="@+id/health_bar"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_gravity="bottom"
+        android:progress="100"
+        android:max="100"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:progressDrawable="@drawable/progress_bar_health" />
+
+</FrameLayout>

@@ -43,6 +43,7 @@ public class MainActivity extends BaseActivity {
     public int lastRefreshDay = 0;
     public boolean isNeedReloadData = false;
     public boolean isBackPressedEnabled = true;
+    public boolean isDataLoaded = false;
     
     // 背包数据
     public Map<String, Integer> backpack = new HashMap<>();
@@ -99,8 +100,18 @@ public class MainActivity extends BaseActivity {
         Map<String, Object> userStatus = tempDataManager.getDbHelper().getUserStatus(currentUserId);
         int lifeFromDB = userStatus != null && userStatus.containsKey("life") ? (int) userStatus.get("life") : Constant.INIT_LIFE;
         
-        // 如果生命值为0（死亡状态），自动重置游戏状态
-        if (lifeFromDB <= 0) {
+        // 修复新玩家判定问题：只有在游戏已开始并且生命值为0时才视为死亡状态
+        boolean isGameStarted = gameStateManager.isGameStarted();
+        
+        // 添加详细的初始化检查日志
+        Log.d("MainActivity", "详细检查初始化状态:");
+        Log.d("MainActivity", "  - 从数据库读取的生命值: " + lifeFromDB);
+        Log.d("MainActivity", "  - 游戏开始状态: " + isGameStarted);
+        Log.d("MainActivity", "  - 生命值<=0: " + (lifeFromDB <= 0));
+        Log.d("MainActivity", "  - 综合条件 (isGameStarted && lifeFromDB<=0): " + (isGameStarted && lifeFromDB <= 0));
+        
+        if (isGameStarted && lifeFromDB <= 0) {
+            // 游戏已开始且生命值为0，才是真正的死亡状态
             Log.i("MainActivity", "检测到死亡状态，重置游戏状态");
             
             // 重置游戏数据
@@ -114,12 +125,24 @@ public class MainActivity extends BaseActivity {
             gameStateManager.setCurrentUserId(currentUserId);
             
             Log.i("MainActivity", "死亡状态处理完成，游戏状态已重置");
+        } else if (!isGameStarted && lifeFromDB <= 0) {
+            // 新玩家初始状态：生命值为0是正常的，只需要初始化游戏数据
+            Log.i("MainActivity", "新玩家状态，开始初始化游戏");
+            
+            // 设置游戏开始状态
+            gameStateManager.setGameStarted(true);
+            
+            // 关键修复：立即设置内存中的生命值为初始值，避免游戏结束
+            life = Constant.INIT_LIFE;
+            
+            // 初始化用户数据
+            tempDataManager.initializeNewUserData(currentUserId);
+            
+            Log.i("MainActivity", "新玩家初始化完成，生命值设置为: " + life);
         }
         
         // 验证游戏状态一致性
-        boolean isGameStarted = gameStateManager.isGameStarted();
-        
-        if (!isGameStarted) {
+        if (!gameStateManager.isGameStarted()) {
             Toast.makeText(this, "游戏状态异常，返回标题页", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, TitleActivity.class));
             finish();
@@ -159,6 +182,9 @@ public class MainActivity extends BaseActivity {
         timeManager.startCDRefresh();
         timeManager.startTimeUpdates();
         timeManager.startTemperatureUpdates();
+        
+        // 初始化任务按钮显示状态
+        eventHandler.updateQuestButtonDisplay();
 
         // 处理返回键
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -588,6 +614,10 @@ public class MainActivity extends BaseActivity {
         // 重置游戏数据
         dataManager.resetGameData(currentUserId);
         
+        // 重置任务进度（游戏失败时重置）
+        QuestManager questManager = QuestManager.getInstance(this);
+        questManager.resetQuestProgressOnGameFailure(currentUserId);
+        
         // 关键修复：重置MyApplication中的用户ID，确保下次启动时重新初始化
         MyApplication.currentUserId = -1;
         
@@ -680,6 +710,34 @@ public class MainActivity extends BaseActivity {
             
             Log.d("MainActivity", "读档后坐标已刷新: (" + currentX + ", " + currentY + ")");
         }
+    }
+
+    /**
+     * 显示任务提示（被QuestManager调用）
+     */
+    public void showQuestHint(String message) {
+        Log.d("QuestHint", "显示任务提示: " + message);
+        
+        // 确保在主线程中更新UI
+        runOnUiThread(() -> {
+            if (tvScrollTip != null) {
+                tvScrollTip.setText(message);
+                
+                // 自动滚动到顶部
+                if (scrollView != null) {
+                    scrollView.post(() -> {
+                        scrollView.fullScroll(ScrollView.FOCUS_UP);
+                    });
+                }
+                
+                // 延迟5秒后清除提示（可选）
+                handler.postDelayed(() -> {
+                    if (tvScrollTip != null) {
+                        tvScrollTip.setText("");
+                    }
+                }, 5000);
+            }
+        });
     }
 
     @Override

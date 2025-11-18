@@ -75,19 +75,34 @@ public class DataManager {
             // 加载状态数据
             int lifeFromDB = getIntValue(userStatus.get("life"), Constant.INIT_LIFE);
             
-            // 如果生命值为0（死亡状态），自动重置游戏状态
-            if (lifeFromDB <= 0) {
+            // 关键修复：只在游戏已开始且生命值<=0时重置，避免新玩家被误判为死亡
+            GameStateManager gameStateManager = GameStateManager.getInstance(activity);
+            boolean isGameStarted = gameStateManager.isGameStarted();
+            
+            // 添加详细的生命值检查日志
+            Log.d("DataManager", "详细检查生命值:");
+            Log.d("DataManager", "  - 从数据库读取的生命值: " + lifeFromDB);
+            Log.d("DataManager", "  - 游戏开始状态: " + isGameStarted);
+            Log.d("DataManager", "  - 生命值<=0: " + (lifeFromDB <= 0));
+            Log.d("DataManager", "  - 综合条件 (isGameStarted && lifeFromDB<=0): " + (isGameStarted && lifeFromDB <= 0));
+            
+            if (isGameStarted && lifeFromDB <= 0) {
+                // 游戏已开始且生命值为0，才是真正的死亡状态
                 Log.i("DataManager", "检测到死亡状态，自动重置游戏数据");
                 // 直接调用重置方法，确保所有状态都正确重置
                 DataManager dataManager = new DataManager(activity);
                 dataManager.resetGameData(MyApplication.currentUserId);
                 
                 // 同时重置游戏状态管理器，确保游戏状态一致
-                GameStateManager gameStateManager = GameStateManager.getInstance(activity);
                 gameStateManager.resetGame();
                 Log.i("DataManager", "游戏状态管理器已重置");
             } else {
+                // 新玩家或者生命值正常，直接设置生命值
                 activity.life = lifeFromDB;
+                Log.i("DataManager", "设置生命值: " + activity.life);
+                
+                // 检查设置后的状态
+                Log.d("DataManager", "设置后活动中的生命值: " + activity.life);
             }
             
             activity.hunger = getIntValue(userStatus.get("hunger"), Constant.INIT_HUNGER);
@@ -432,6 +447,61 @@ public class DataManager {
             Log.i("DataManager", "游戏数据重置成功（保留建筑）");
         } catch (Exception e) {
             Log.e("DataManager", "重置游戏数据失败", e);
+        }
+    }
+
+    /**
+     * 初始化新用户数据（新玩家第一次开始游戏时调用）
+     */
+    public void initializeNewUserData(int userId) {
+        try {
+            // 1. 确保用户数据存在，如果不存在则创建
+            if (!dbHelper.hasUserData(userId)) {
+                dbHelper.initializeUserData(userId);
+            }
+            
+            // 2. 初始化用户状态为默认值
+            Map<String, Object> defaultStatus = new HashMap<>();
+            defaultStatus.put("life", Constant.INIT_LIFE);
+            defaultStatus.put("hunger", Constant.INIT_HUNGER);
+            defaultStatus.put("thirst", Constant.INIT_THIRST);
+            defaultStatus.put("stamina", Constant.INIT_STAMINA);
+            defaultStatus.put("gold", 0);
+            defaultStatus.put("backpack_cap", 10);
+            defaultStatus.put("difficulty", "normal");
+            defaultStatus.put("first_collect_time", 0);
+            defaultStatus.put("game_hour", Constant.GAME_HOUR_DEFAULT);
+            defaultStatus.put("game_day", Constant.GAME_DAY_DEFAULT);
+            defaultStatus.put("temperature", Constant.TEMPERATURE_DEFAULT);
+            
+            // 3. 初始化操作次数记录
+            defaultStatus.put("global_collect_times", 0);
+            defaultStatus.put("exploration_times", 0);
+            defaultStatus.put("synthesis_times", 0);
+            defaultStatus.put("last_refresh_day", 0);
+            
+            // 4. 设置默认出生点
+            int[] spawnPoint = activity.gameMap.chooseRandomSpawnPoint();
+            defaultStatus.put("current_x", spawnPoint[0]);
+            defaultStatus.put("current_y", spawnPoint[1]);
+            
+            dbHelper.updateUserStatus(userId, defaultStatus);
+            
+            // 5. 更新当前活动中的状态变量，确保立即生效
+            activity.life = Constant.INIT_LIFE;
+            activity.hunger = Constant.INIT_HUNGER;
+            activity.thirst = Constant.INIT_THIRST;
+            activity.stamina = Constant.INIT_STAMINA;
+            activity.currentX = spawnPoint[0];
+            activity.currentY = spawnPoint[1];
+            activity.gameHour = Constant.GAME_HOUR_DEFAULT;
+            activity.gameDay = Constant.GAME_DAY_DEFAULT;
+            activity.currentCollectTimes = 0;
+            activity.lastRefreshDay = 0;
+            
+            Log.i("DataManager", "新用户数据初始化成功");
+        } catch (Exception e) {
+            Log.e("DataManager", "新用户数据初始化失败", e);
         }
     }
 }

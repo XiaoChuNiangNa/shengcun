@@ -11,9 +11,17 @@ import java.util.Random;
  */
 public class LevelExperienceManager {
     
+    private static LevelExperienceManager instance;
     private Context context;
     private SharedPreferences sharedPreferences;
     private Random random;
+
+    public static synchronized LevelExperienceManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new LevelExperienceManager(context.getApplicationContext());
+        }
+        return instance;
+    }
     
     // 等级和经验常量
     private static final int MAX_LEVEL = 100;
@@ -96,6 +104,13 @@ public class LevelExperienceManager {
         
         // 检查是否升级
         checkLevelUp();
+    }
+
+    /**
+     * 添加经验值（别名方法，与QuestManager调用保持一致）
+     */
+    public void addExperience(int experienceAmount) {
+        addExp(experienceAmount);
     }
     
     /**

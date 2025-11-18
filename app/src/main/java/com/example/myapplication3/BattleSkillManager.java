@@ -1,5 +1,7 @@
 package com.example.myapplication3;
 
+import android.content.Intent;
+
 import java.util.*;
 
 /**
@@ -183,8 +185,11 @@ public class BattleSkillManager {
                 
                 if (Math.random() < escapeChance) {
                     if (battleActivity != null) {
-                        // 通过公共方法结束战斗
-                        battleActivity.endBattle(true);
+                        // 设置战斗结果为逃跑并结束活动
+                        Intent resultIntent = new Intent();
+                        resultIntent.putExtra("battle_result", "escape");
+                        battleActivity.setResult(battleActivity.RESULT_OK, resultIntent);
+                        battleActivity.finish();
                     }
                     result.append(caster.getName()).append(" 成功逃跑！");
                 } else {
@@ -232,22 +237,13 @@ public class BattleSkillManager {
                 break;
                 
             case SUMMON:
-                // 群攻技能
+                // 召唤技能 - 实际的召唤逻辑由BattleActivity的useSummonSkill方法处理
                 double summonHealthRatio = 0.5; // Lv1: 50%
                 if (level == 2) summonHealthRatio = 0.75; // Lv2: 75%
                 else if (level == 3) summonHealthRatio = 1.0; // Lv3: 100%
                 
-                if (battleActivity != null) {
-                    // 创建分身 - 使用完整的构造函数
-                    int[] defaultSkillCooldowns = {3, 5, 7}; // 默认技能冷却时间
-                    BattleUnit clone = new BattleUnit(caster.getName() + "的分身", 
-                        (int)(caster.getMaxHealth() * summonHealthRatio), 
-                        caster.getAttack() / 2, caster.getDefense() / 2, 
-                        defaultSkillCooldowns);
-                    
-                    // 添加到战场（简化实现）
-                    result.append(caster.getName()).append(" 召唤了分身！");
-                }
+                result.append(caster.getName()).append(" 准备召唤分身！生命值比例: ").append((int)(summonHealthRatio * 100)).append("%");
+                // 实际的召唤创建和添加到战场的逻辑在BattleActivity.useSummonSkill()方法中
                 break;
                 
             case STUN:

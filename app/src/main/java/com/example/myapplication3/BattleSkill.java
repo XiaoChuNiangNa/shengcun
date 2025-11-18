@@ -15,14 +15,14 @@ public class BattleSkill {
     public BattleSkill(String name, int cooldown) {
         this.name = name;
         this.cooldown = cooldown;
-        this.currentCooldown = 0;
+        this.currentCooldown = cooldown; // 初始设为冷却状态
         this.damage = 0;
     }
 
     public BattleSkill(String name, int cooldown, int damage) {
         this.name = name;
         this.cooldown = cooldown;
-        this.currentCooldown = 0;
+        this.currentCooldown = cooldown; // 初始设为冷却状态
         this.damage = damage;
     }
 
@@ -30,7 +30,7 @@ public class BattleSkill {
         this.name = name;
         this.description = description;
         this.cooldown = cooldown;
-        this.currentCooldown = 0;
+        this.currentCooldown = cooldown; // 初始设为冷却状态
         this.damage = damage;
     }
 

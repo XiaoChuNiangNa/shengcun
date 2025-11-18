@@ -1,6 +1,8 @@
 package com.example.myapplication3;
 
 import com.example.myapplication3.BattleSkill;
+import com.example.myapplication3.adapter.BattleCardAdapter;
+import com.example.myapplication3.utils.BattleUIManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -8,7 +10,7 @@ import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ProgressBar;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -43,17 +45,11 @@ public class BattleActivity extends AppCompatActivity {
     private ScrollView battleLogScroll;
     private TextView battleLogText;
 
-    // 敌方单位控件（3个位置）
-    private ProgressBar[] enemyAttackProgress = new ProgressBar[3];
-    private ProgressBar[][] enemySkillProgress = new ProgressBar[3][2];
-    private ProgressBar[] enemyHealth = new ProgressBar[3];
-    private TextView[] enemyName = new TextView[3];
-
-    // 玩家单位控件（3个位置）
-    private ProgressBar[] playerAttackProgress = new ProgressBar[3];
-    private ProgressBar[][] playerSkillProgress = new ProgressBar[3][2];
-    private ProgressBar[] playerHealth = new ProgressBar[3];
-    private TextView[] playerName = new TextView[3];
+    // 新的动态卡牌系统
+    private BattleCardAdapter cardAdapter;
+    private BattleUIManager uiManager;
+    private LinearLayout playerContainer;
+    private LinearLayout enemyContainer;
 
     // 对战状态
     private int currentRound = 1;
@@ -178,36 +174,15 @@ public class BattleActivity extends AppCompatActivity {
         battleLogScroll = findViewById(R.id.battle_log_scroll);
         battleLogText = findViewById(R.id.battle_log_text);
 
-        // 初始化3个位置的单位控件（适配1v1布局）
-        for (int i = 0; i < 3; i++) {
-            // 敌方单位控件 - 使用带编号的ID
-            enemyName[i] = findViewById(getResources().getIdentifier(
-                "enemy_name_" + (i + 1), "id", getPackageName()));
-            enemyAttackProgress[i] = findViewById(getResources().getIdentifier(
-                "enemy_attack_progress_" + (i + 1), "id", getPackageName()));
-            enemyHealth[i] = findViewById(getResources().getIdentifier(
-                "enemy_health_" + (i + 1), "id", getPackageName()));
-
-            // 敌方技能进度条
-            for (int j = 0; j < 2; j++) {
-                enemySkillProgress[i][j] = findViewById(getResources().getIdentifier(
-                    "enemy_skill_" + (j + 1), "id", getPackageName()));
-            }
-
-            // 玩家单位控件 - 使用带编号的ID
-            playerName[i] = findViewById(getResources().getIdentifier(
-                "player_name_" + (i + 1), "id", getPackageName()));
-            playerAttackProgress[i] = findViewById(getResources().getIdentifier(
-                "player_attack_progress_" + (i + 1), "id", getPackageName()));
-            playerHealth[i] = findViewById(getResources().getIdentifier(
-                "player_health_" + (i + 1), "id", getPackageName()));
-
-            // 玩家技能进度条
-            for (int j = 0; j < 2; j++) {
-                playerSkillProgress[i][j] = findViewById(getResources().getIdentifier(
-                    "player_skill_" + (j + 1), "id", getPackageName()));
-            }
-        }
+        // 初始化新的动态卡牌系统
+        playerContainer = findViewById(R.id.player_units_row);
+        enemyContainer = findViewById(R.id.enemy_units_row);
+        
+        // 创建卡牌适配器
+        cardAdapter = new BattleCardAdapter(this, playerContainer, enemyContainer);
+        
+        // 创建UI管理器
+        uiManager = new BattleUIManager(cardAdapter, tvBattleInfo, tvResources, battleLogText, battleLogScroll);
     }
 
     /**
@@ -220,65 +195,119 @@ public class BattleActivity extends AppCompatActivity {
             enemyUnits[i] = null;
         }
 
-        // 创建主玩家单位（位置0）
-        playerUnits[0] = MonsterManager.createPlayer();
-        playerUnits[0].resetCooldowns();
+        // 初始化1号位和3号位为隐藏状态，2号位保持默认状态
+        int[] sideSlots = {0, 2}; // 1号位和3号位（索引0和2）
+        for (int i : sideSlots) {
+            int playerCardId = getResources().getIdentifier("player_card_" + (i + 1), "id", getPackageName());
+            int enemyCardId = getResources().getIdentifier("enemy_card_" + (i + 1), "id", getPackageName());
+            
+            View playerCard = findViewById(playerCardId);
+            View enemyCard = findViewById(enemyCardId);
+            
+            if (playerCard != null) {
+                playerCard.setVisibility(View.GONE);
+            }
+            if (enemyCard != null) {
+                enemyCard.setVisibility(View.GONE);
+            }
+        }
 
-        // 创建敌方单位
+        // 创建主玩家单位（位置2，即索引1）
+        playerUnits[1] = MonsterManager.createPlayer();
+        playerUnits[1].resetCooldowns();
+
+        // 创建敌方单位（位置2，即索引1）
         if (isWildEncounter && wildAnimal != null) {
             // 野外遭遇战：使用指定的野生动物
-            enemyUnits[0] = MonsterManager.convertToBattleUnit(wildAnimal);
+            enemyUnits[1] = MonsterManager.convertToBattleUnit(wildAnimal);
+            
+            // 为野外动物创建动态技能
+            String animalName = wildAnimal.getName();
+            BattleSkill[] animalSkills = com.example.myapplication3.factory.SkillFactory.createEnemySkills(animalName);
+            enemyUnits[1].setSkills(animalSkills);
+            
             addBattleLog("遭遇野生动物：" + wildAnimal.getName());
+            int skillCount = com.example.myapplication3.factory.SkillFactory.getValidSkillCount(animalSkills);
+            addBattleLog("野生动物拥有 " + skillCount + " 个技能");
         } else {
             // 普通对战：随机敌人
             Monster monster = MonsterManager.getRandomMonster();
             if (monster != null) {
-                enemyUnits[0] = MonsterManager.convertToBattleUnit(monster);
+                enemyUnits[1] = MonsterManager.convertToBattleUnit(monster);
+                
+                // 为怪物创建动态技能
+                String enemyName = monster.getName();
+                BattleSkill[] enemySkills = com.example.myapplication3.factory.SkillFactory.createEnemySkills(enemyName);
+                enemyUnits[1].setSkills(enemySkills);
+                
+                int skillCount = com.example.myapplication3.factory.SkillFactory.getValidSkillCount(enemySkills);
+                addBattleLog("敌人拥有 " + skillCount + " 个技能");
             } else {
                 // 如果没有怪物，使用默认敌人
-                enemyUnits[0] = new BattleUnit("森林守护者", 100, 8, 5, 80,
-                    new BattleSkill[0], BattleUnit.TYPE_ENEMY);
+                BattleSkill[] defaultSkills = new BattleSkill[]{
+                    BattleSkillManager.createSkill(BattleSkillManager.SkillType.BITE, 1)
+                };
+                enemyUnits[1] = new BattleUnit("森林守护者", 100, 8, 5, 80,
+                    defaultSkills, BattleUnit.TYPE_ENEMY);
             }
         }
-        enemyUnits[0].resetCooldowns();
+        enemyUnits[1].resetCooldowns();
 
-        // 初始化召唤技能
-        initSummonSkill();
+        // 初始化技能
+        initPlayerSkills();
 
         // 记录对战开始时的属性状态
         addBattleLog("[开始战斗]");
         addBattleLog("玩家单位属性:");
-        addBattleLog(getUnitAttributesString(playerUnits[0]));
+        addBattleLog(getUnitAttributesString(playerUnits[1]));
         addBattleLog("敌方单位属性:");
-        addBattleLog(getUnitAttributesString(enemyUnits[0]));
+        addBattleLog(getUnitAttributesString(enemyUnits[1]));
+        
+        // 初始化进度条上限和显示
+        if (cardAdapter != null) {
+            cardAdapter.updateAllSkillProgress();
+        }
     }
 
     /**
-     * 初始化召唤技能 - 使用新的技能系统
+     * 初始化技能 - 使用工厂模式和配置管理系统
      */
-    private void initSummonSkill() {
-        // 给玩家单位添加使用新技能系统的技能
-        if (playerUnits[0] != null) {
-            BattleSkill[] skills = new BattleSkill[6]; // 包括多种技能类型
+    private void initPlayerSkills() {
+        // 给玩家单位添加技能
+        if (playerUnits[1] != null) {
+            // 使用技能工厂动态创建技能
+            int playerLevel = getCurrentPlayerLevel();
+            BattleSkill[] skills = com.example.myapplication3.factory.SkillFactory.createPlayerSkills(playerLevel);
             
-            // 使用新技能系统创建技能
-            skills[0] = BattleSkillManager.createSkill(BattleSkillManager.SkillType.CHARGE, 2);
-            skills[1] = BattleSkillManager.createSkill(BattleSkillManager.SkillType.POISON, 1);
-            skills[2] = BattleSkillManager.createSkill(BattleSkillManager.SkillType.BITE, 1);
-            skills[3] = BattleSkillManager.createSkill(BattleSkillManager.SkillType.SUMMON, 1);
-            skills[4] = BattleSkillManager.createSkill(BattleSkillManager.SkillType.STUN, 2);
-            skills[5] = BattleSkillManager.createSkill(BattleSkillManager.SkillType.ESCAPE, 1);
-
-            playerUnits[0].setSkills(skills);
+            // 验证技能数组
+            if (!com.example.myapplication3.factory.SkillFactory.validateSkillArray(skills)) {
+                addBattleLog("警告：技能创建失败，使用默认技能");
+                skills = new BattleSkill[]{
+                    BattleSkillManager.createSkill(BattleSkillManager.SkillType.BITE, 1)
+                };
+            }
+            
+            playerUnits[1].setSkills(skills);
             
             // 记录技能信息
-            addBattleLog("玩家技能已加载：");
+            int skillCount = com.example.myapplication3.factory.SkillFactory.getValidSkillCount(skills);
+            addBattleLog("玩家技能已加载（共 " + skillCount + " 个）：");
+            
             for (BattleSkill skill : skills) {
                 if (skill != null) {
-                    addBattleLog("- " + skill.getName() + " (冷却：" + skill.getCooldown() + "回合)");
+                    String description = com.example.myapplication3.config.SkillConfig.getSkillDescription(skill.skillType);
+                    addBattleLog("- " + skill.getName() + " (冷却：" + skill.getCooldown() + "回合) - " + description);
                 }
             }
         }
+    }
+    
+    /**
+     * 获取当前玩家等级（临时实现，应从数据库获取）
+     */
+    private int getCurrentPlayerLevel() {
+        // 临时返回固定等级，实际应该从用户数据或数据库获取
+        return 5; // 假设玩家等级5，对应战斗配置
     }
 
     /**
@@ -321,45 +350,27 @@ public class BattleActivity extends AppCompatActivity {
     private void updateUI() {
         updateManualAutoText();
 
-        // 更新玩家单位显示
-        if (playerUnits[0] != null && playerName[0] != null) {
-            playerName[0].setText(playerUnits[0].getName());
-            playerHealth[0].setMax(playerUnits[0].getMaxHealth());
-            playerHealth[0].setProgress(playerUnits[0].getCurrentHealth());
-            playerAttackProgress[0].setProgress(0);
-
-            // 更新技能进度条
-            BattleSkill[] skills = playerUnits[0].getSkills();
-            if (skills != null) {
-                for (int i = 0; i < Math.min(skills.length, 2); i++) {
-                    if (playerSkillProgress[0][i] != null) {
-                        playerSkillProgress[0][i].setMax(skills[i].getCooldown());
-                        playerSkillProgress[0][i].setProgress(skills[i].getCurrentCooldown());
-                    }
-                }
-            }
+        // 使用新的适配器系统更新所有卡牌
+        if (cardAdapter != null) {
+            // 更新所有玩家卡牌
+            cardAdapter.updatePlayerUnits(playerUnits);
+            
+            // 更新所有敌方卡牌
+            cardAdapter.updateEnemyUnits(enemyUnits);
+            
+            // 更新所有技能和攻击进度条
+            cardAdapter.updateAllSkillProgress();
         }
 
-        // 更新敌方单位显示
-        if (enemyUnits[0] != null && enemyName[0] != null) {
-            enemyName[0].setText(enemyUnits[0].getName());
-            enemyHealth[0].setMax(enemyUnits[0].getMaxHealth());
-            enemyHealth[0].setProgress(enemyUnits[0].getCurrentHealth());
-            enemyAttackProgress[0].setProgress(0);
+        // 更新资源显示
+        updateResourceDisplay();
+    }
 
-            // 更新技能进度条
-            BattleSkill[] skills = enemyUnits[0].getSkills();
-            if (skills != null) {
-                for (int i = 0; i < Math.min(skills.length, 2); i++) {
-                    if (enemySkillProgress[0][i] != null) {
-                        enemySkillProgress[0][i].setMax(skills[i].getCooldown());
-                        enemySkillProgress[0][i].setProgress(skills[i].getCurrentCooldown());
-                    }
-                }
-            }
-        }
-
-        // 更新回合信息和等级信息
+    /**
+     * 更新资源显示
+     */
+    private void updateResourceDisplay() {
+        // 更新回合信息
         tvBattleInfo.setText(String.format("第 %d 回合", currentRound));
         
         // 显示等级和进度信息（外置系统）
@@ -432,33 +443,46 @@ public class BattleActivity extends AppCompatActivity {
      * 玩家自动行动
      */
     private void performPlayerAutoAction() {
-        if (playerUnits[0] == null || playerUnits[0].getCurrentHealth() <= 0) return;
+        if (playerUnits[1] == null || playerUnits[1].getCurrentHealth() <= 0) return;
 
-        // 简单的AI逻辑：优先使用召唤技能，然后使用其他技能，最后普通攻击
-        BattleSkill[] skills = playerUnits[0].getSkills();
-        boolean actionPerformed = false;
-
-        // 检查召唤技能是否可用
-        if (skills != null && skills.length > SUMMON_SKILL_INDEX &&
-            skills[SUMMON_SKILL_INDEX].getCurrentCooldown() <= 0) {
-            useSummonSkill(playerUnits[0]);
-            actionPerformed = true;
+        BattleSkill[] skills = playerUnits[1].getSkills();
+        if (skills == null) {
+            performPlayerAttack();
+            return;
         }
 
-        // 检查其他技能是否可用
-        if (!actionPerformed && skills != null) {
+        boolean actionPerformed = false;
+
+        // 优先检查召唤技能是否可用
+        if (skills.length > SUMMON_SKILL_INDEX && skills[SUMMON_SKILL_INDEX] != null &&
+            skills[SUMMON_SKILL_INDEX].getCurrentCooldown() <= 0) {
+            useSummonSkill(playerUnits[1]);
+            actionPerformed = true;
+            addBattleLog("[自动] 使用召唤技能");
+        }
+
+        // 如果没有使用召唤技能，检查其他技能是否可用
+        if (!actionPerformed) {
+            // 随机选择一个可用技能
+            List<Integer> availableSkills = new ArrayList<>();
             for (int i = 0; i < skills.length; i++) {
-                if (i != SUMMON_SKILL_INDEX && skills[i].getCurrentCooldown() <= 0) {
-                    usePlayerSkill(i);
-                    actionPerformed = true;
-                    break;
+                if (i != SUMMON_SKILL_INDEX && skills[i] != null && skills[i].getCurrentCooldown() <= 0) {
+                    availableSkills.add(i);
                 }
+            }
+            
+            if (!availableSkills.isEmpty()) {
+                int selectedSkillIndex = availableSkills.get(random.nextInt(availableSkills.size()));
+                usePlayerSkill(selectedSkillIndex);
+                actionPerformed = true;
+                addBattleLog("[自动] 使用技能: " + skills[selectedSkillIndex].getName());
             }
         }
 
         // 如果没有可用技能，使用普通攻击
         if (!actionPerformed) {
             performPlayerAttack();
+            addBattleLog("[自动] 使用普通攻击");
         }
     }
 
@@ -466,27 +490,57 @@ public class BattleActivity extends AppCompatActivity {
      * 显示技能选择对话框
      */
     private void showSkillSelectionDialog() {
-        // 技能选择对话框实现
-        // 这里简化实现，实际项目中需要完整的UI
-
-        if (playerUnits[0] != null) {
-            BattleSkill[] skills = playerUnits[0].getSkills();
-            if (skills != null) {
-                // 简单的技能选择逻辑
-                int usableSkillIndex = -1;
-                for (int i = 0; i < skills.length; i++) {
-                    if (skills[i] != null && skills[i].getCurrentCooldown() <= 0) {
-                        usableSkillIndex = i;
-                        break;
-                    }
-                }
-
-                if (usableSkillIndex != -1) {
-                    usePlayerSkill(usableSkillIndex);
-                } else {
-                    Toast.makeText(this, "所有技能都在冷却中", Toast.LENGTH_SHORT).show();
-                }
+        if (playerUnits[1] == null) return;
+        
+        BattleSkill[] skills = playerUnits[1].getSkills();
+        if (skills == null) return;
+        
+        // 创建可用技能列表
+        List<String> skillOptions = new ArrayList<>();
+        final List<Integer> skillIndices = new ArrayList<>();
+        
+        // 优先添加召唤技能
+        if (skills.length > SUMMON_SKILL_INDEX && skills[SUMMON_SKILL_INDEX] != null) {
+            BattleSkill summonSkill = skills[SUMMON_SKILL_INDEX];
+            String status = summonSkill.getCurrentCooldown() <= 0 ? "可用" : "冷却(" + summonSkill.getCurrentCooldown() + ")";
+            skillOptions.add(summonSkill.getName() + " - " + status);
+            skillIndices.add(SUMMON_SKILL_INDEX);
+        }
+        
+        // 添加其他技能（跳过召唤技能）
+        for (int i = 0; i < skills.length; i++) {
+            if (i == SUMMON_SKILL_INDEX) continue;
+            
+            if (skills[i] != null) {
+                String status = skills[i].getCurrentCooldown() <= 0 ? "可用" : "冷却(" + skills[i].getCurrentCooldown() + ")";
+                skillOptions.add(skills[i].getName() + " - " + status);
+                skillIndices.add(i);
             }
+        }
+        
+        if (skillOptions.isEmpty()) {
+            Toast.makeText(this, "没有可用技能", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // 检查Activity是否还在运行
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        
+        try {
+            // 显示技能选择对话框
+            android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+            builder.setTitle("选择技能");
+            builder.setItems(skillOptions.toArray(new String[0]), (dialog, which) -> {
+                int skillIndex = skillIndices.get(which);
+                usePlayerSkill(skillIndex);
+            });
+            
+            builder.setNegativeButton("取消", null);
+            builder.show();
+        } catch (Exception e) {
+            // 如果显示对话框失败，不执行任何操作
         }
     }
 
@@ -494,9 +548,9 @@ public class BattleActivity extends AppCompatActivity {
      * 使用玩家技能 - 使用新技能系统
      */
     private void usePlayerSkill(int skillIndex) {
-        if (playerUnits[0] == null || enemyUnits[0] == null) return;
+        if (playerUnits[1] == null || enemyUnits[1] == null) return;
 
-        BattleSkill[] skills = playerUnits[0].getSkills();
+        BattleSkill[] skills = playerUnits[1].getSkills();
         if (skills == null || skillIndex < 0 || skillIndex >= skills.length) return;
 
         BattleSkill skill = skills[skillIndex];
@@ -507,13 +561,13 @@ public class BattleActivity extends AppCompatActivity {
 
         // 处理特殊技能（召唤技能）
         if (skillIndex == SUMMON_SKILL_INDEX) {
-            useSummonSkill(playerUnits[0]);
+            useSummonSkill(playerUnits[1]);
             return;
         }
 
         // 使用新技能系统的执行逻辑
         String skillResult = BattleSkillManager.executeSkill(
-            skill.getSkillType(), skill.getLevel(), playerUnits[0], enemyUnits[0], this);
+            skill.getSkillType(), skill.getLevel(), playerUnits[1], enemyUnits[1], this);
 
         // 记录技能使用
         skillsUsed++;
@@ -527,7 +581,7 @@ public class BattleActivity extends AppCompatActivity {
         updateUI();
 
         // 检查是否击杀敌人
-        if (enemyUnits[0].getCurrentHealth() <= 0) {
+        if (enemyUnits[1].getCurrentHealth() <= 0) {
             handleEnemyDefeated();
         }
     }
@@ -536,12 +590,24 @@ public class BattleActivity extends AppCompatActivity {
      * 使用召唤技能
      */
     private void useSummonSkill(BattleUnit caster) {
-        // 查找空位放置召唤单位
+        // 查找空位放置召唤单位（优先使用1、3号位）
         int emptySlot = -1;
-        for (int i = 1; i < 3; i++) { // 从位置1开始（位置0是玩家）
-            if (playerUnits[i] == null) {
-                emptySlot = i;
+        int[] preferredSlots = {0, 2}; // 优先使用1号和3号位
+        
+        for (int slot : preferredSlots) {
+            if (playerUnits[slot] == null) {
+                emptySlot = slot;
                 break;
+            }
+        }
+        
+        // 如果没有1、3号位，使用其他空位
+        if (emptySlot == -1) {
+            for (int i = 0; i < 3; i++) {
+                if (playerUnits[i] == null) {
+                    emptySlot = i;
+                    break;
+                }
             }
         }
 
@@ -550,10 +616,22 @@ public class BattleActivity extends AppCompatActivity {
             return;
         }
 
+        // 获取召唤技能等级来决定分身属性
+        BattleSkill[] skills = caster.getSkills();
+        int skillLevel = 1; // 默认等级
+        if (skills != null && skills.length > SUMMON_SKILL_INDEX && skills[SUMMON_SKILL_INDEX] != null) {
+            skillLevel = skills[SUMMON_SKILL_INDEX].getLevel();
+        }
+
+        // 根据技能等级计算分身生命值比例
+        double healthRatio = 0.5; // Lv1: 50%
+        if (skillLevel == 2) healthRatio = 0.75; // Lv2: 75%
+        else if (skillLevel == 3) healthRatio = 1.0; // Lv3: 100%
+
         // 创建召唤单位
         BattleUnit summonedUnit = new BattleUnit(
             "召唤分身",
-            caster.getMaxHealth() / 2, // 一半的生命值
+            (int)(caster.getMaxHealth() * healthRatio), // 根据等级调整生命值
             caster.getAttack() / 2,     // 一半的攻击力
             caster.getDefense() / 2,    // 一半的防御力
             caster.getSpeed(),          // 相同的速度
@@ -561,16 +639,20 @@ public class BattleActivity extends AppCompatActivity {
             BattleUnit.TYPE_SUMMON     // 召唤单位类型
         );
 
+        // 设置召唤单位的主单位和持续时间
+        summonedUnit.setMaster(caster);
+        summonedUnit.setSummonDuration(SUMMON_DURATION); // 设置持续时间为5回合
+
         playerUnits[emptySlot] = summonedUnit;
         summonsUsed++;
 
         // 设置召唤技能冷却
-        BattleSkill[] skills = caster.getSkills();
         if (skills != null && skills.length > SUMMON_SKILL_INDEX) {
             skills[SUMMON_SKILL_INDEX].resetCooldown();
         }
 
-        addBattleLog("玩家召唤了 " + summonedUnit.getName() + " 在位置 " + (emptySlot + 1));
+        addBattleLog("玩家召唤了 " + summonedUnit.getName() + " 在位置 " + (emptySlot + 1) + 
+                     " (生命值: " + summonedUnit.getMaxHealth() + ", 持续" + SUMMON_DURATION + "回合)");
         updateUI();
     }
 
@@ -578,17 +660,18 @@ public class BattleActivity extends AppCompatActivity {
      * 玩家普通攻击
      */
     private void performPlayerAttack() {
-        if (playerUnits[0] == null || enemyUnits[0] == null) return;
+        if (playerUnits[1] == null || enemyUnits[1] == null) return;
 
-        int damage = calculateBasicDamage(playerUnits[0], enemyUnits[0]);
-        enemyUnits[0].takeDamage(damage);
+        int damage = calculateBasicDamage(playerUnits[1], enemyUnits[1]);
+        enemyUnits[1].takeDamage(damage);
         totalDamageDealt += damage;
 
-        addBattleLog("玩家对 " + enemyUnits[0].getName() + " 造成 " + damage + " 点伤害");
+        String enemyName = enemyUnits[1].getName() != null ? enemyUnits[1].getName() : "未知敌人";
+        addBattleLog("玩家对 " + enemyName + " 造成 " + damage + " 点伤害");
         updateUI();
 
         // 检查是否击杀敌人
-        if (enemyUnits[0].getCurrentHealth() <= 0) {
+        if (enemyUnits[1].getCurrentHealth() <= 0) {
             handleEnemyDefeated();
         }
     }
@@ -597,11 +680,13 @@ public class BattleActivity extends AppCompatActivity {
      * 敌方自动行动
      */
     private void performEnemyAutoAction() {
-        if (enemyUnits[0] == null || enemyUnits[0].getCurrentHealth() <= 0) return;
+        if (enemyUnits[1] == null || enemyUnits[1].getCurrentHealth() <= 0) return;
 
+        String enemyName = enemyUnits[1].getName() != null ? enemyUnits[1].getName() : "未知敌人";
+        
         // 检查目标是否被眩晕
-        if (BuffEffectManager.isUnitStunned(enemyUnits[0].getName())) {
-            addBattleLog(enemyUnits[0].getName() + " 被眩晕，无法行动！");
+        if (BuffEffectManager.isUnitStunned(enemyName)) {
+            addBattleLog(enemyName + " 被眩晕，无法行动！");
             updateUI();
             return;
         }
@@ -611,7 +696,7 @@ public class BattleActivity extends AppCompatActivity {
         if (target == null) return;
 
         // 敌方随机选择行动：普通攻击或技能
-        BattleSkill[] skills = enemyUnits[0].getSkills();
+        BattleSkill[] skills = enemyUnits[1].getSkills();
         boolean useSkill = false;
         
         if (skills != null && skills.length > 0) {
@@ -639,7 +724,7 @@ public class BattleActivity extends AppCompatActivity {
                     // 使用技能
                     String skillResult = BattleSkillManager.executeSkill(
                         selectedSkill.getSkillType(), selectedSkill.getLevel(), 
-                        enemyUnits[0], target, this);
+                        enemyUnits[1], target, this);
                     
                     // 设置技能冷却
                     selectedSkill.resetCooldown();
@@ -654,7 +739,7 @@ public class BattleActivity extends AppCompatActivity {
         }
 
         // 使用普通攻击
-        int damage = calculateBasicDamage(enemyUnits[0], target);
+        int damage = calculateBasicDamage(enemyUnits[1], target);
         
         // 处理流血效果额外伤害
         int bleedingDamage = BuffEffectManager.processBleedingOnDamageTaken(target.getName());
@@ -666,7 +751,8 @@ public class BattleActivity extends AppCompatActivity {
         target.takeDamage(damage);
         totalDamageTaken += damage;
 
-        addBattleLog(enemyUnits[0].getName() + " 对 " + target.getName() + " 造成 " + damage + " 点伤害");
+        String targetName = target.getName() != null ? target.getName() : "未知目标";
+        addBattleLog(enemyName + " 对 " + targetName + " 造成 " + damage + " 点伤害");
         updateUI();
 
         // 检查是否击杀玩家单位
@@ -679,14 +765,15 @@ public class BattleActivity extends AppCompatActivity {
      * 选择敌方攻击目标
      */
     private BattleUnit selectEnemyTarget() {
-        // 优先攻击玩家主单位
-        if (playerUnits[0] != null && playerUnits[0].getCurrentHealth() > 0) {
-            return playerUnits[0];
+        // 优先攻击玩家主单位（2号位，索引1）
+        if (playerUnits[1] != null && playerUnits[1].getCurrentHealth() > 0) {
+            return playerUnits[1];
         }
 
-        // 如果没有主单位，攻击召唤单位
-        for (int i = 1; i < 3; i++) {
-            if (playerUnits[i] != null && playerUnits[i].getCurrentHealth() > 0) {
+        // 如果没有主单位，攻击召唤单位（优先1号位和3号位）
+        for (int i = 0; i < 3; i++) {
+            if (i != 1 && playerUnits[i] != null && playerUnits[i].getCurrentHealth() > 0) {
+                addBattleLog("敌人选择攻击召唤单位: " + playerUnits[i].getName());
                 return playerUnits[i];
             }
         }
@@ -698,6 +785,9 @@ public class BattleActivity extends AppCompatActivity {
      * 结束玩家回合
      */
     private void endPlayerTurn() {
+        // 处理回合开始时的效果和冷却（包括进度更新）
+        processRoundStart();
+        
         // 敌方行动
         performEnemyAutoAction();
 
@@ -749,7 +839,13 @@ public class BattleActivity extends AppCompatActivity {
      */
     private void handleEnemyDefeated() {
         enemiesKilled++;
-        addBattleLog("击败了 " + enemyUnits[0].getName());
+        
+        // 检查敌方单位是否存在后再获取名称
+        if (enemyUnits[1] != null && enemyUnits[1].getName() != null) {
+            addBattleLog("击败了 " + enemyUnits[1].getName());
+        } else {
+            addBattleLog("击败了未知敌人");
+        }
 
         // 处理怪物掉落物
         handleMonsterDrops();
@@ -856,6 +952,10 @@ public class BattleActivity extends AppCompatActivity {
                 resultIntent.putExtra("battle_result", "defeat");
                 resultIntent.putExtra("animal_name", animalName);
 
+                // 重置任务进度（战斗失败时重置）
+                QuestManager questManager = QuestManager.getInstance(BattleActivity.this);
+                questManager.resetQuestProgressOnGameFailure(MyApplication.currentUserId);
+
                 setResult(RESULT_CANCELED, resultIntent);
                 finish();
             }
@@ -868,24 +968,44 @@ public class BattleActivity extends AppCompatActivity {
      * 显示胜利对话框
      */
     private void showVictoryDialog() {
-        // 简化实现，实际项目中需要完整的UI
-        new android.app.AlertDialog.Builder(this)
-            .setTitle("战斗胜利")
-            .setMessage(String.format("获得 %d 金币和 %d 经验", playerGold, playerExp))
-            .setPositiveButton("确定", (dialog, which) -> finish())
-            .show();
+        // 检查Activity是否还在运行
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        
+        try {
+            // 简化实现，实际项目中需要完整的UI
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("战斗胜利")
+                .setMessage(String.format("获得 %d 金币和 %d 经验", playerGold, playerExp))
+                .setPositiveButton("确定", (dialog, which) -> finish())
+                .show();
+        } catch (Exception e) {
+            // 如果显示对话框失败，直接结束Activity
+            finish();
+        }
     }
 
     /**
      * 显示失败对话框
      */
     private void showDefeatDialog() {
-        // 简化实现，实际项目中需要完整的UI
-        new android.app.AlertDialog.Builder(this)
-            .setTitle("战斗失败")
-            .setMessage("您被击败了")
-            .setPositiveButton("确定", (dialog, which) -> finish())
-            .show();
+        // 检查Activity是否还在运行
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        
+        try {
+            // 简化实现，实际项目中需要完整的UI
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("战斗失败")
+                .setMessage("您被击败了")
+                .setPositiveButton("确定", (dialog, which) -> finish())
+                .show();
+        } catch (Exception e) {
+            // 如果显示对话框失败，直接结束Activity
+            finish();
+        }
     }
 
     /**
@@ -943,8 +1063,17 @@ public class BattleActivity extends AppCompatActivity {
      * 处理怪物掉落物
      */
     private void handleMonsterDrops() {
+        // 检查敌方单位是否存在
+        if (enemyUnits[1] == null) {
+            return; // 敌方单位已被清理，不处理掉落物
+        }
+        
         // 获取当前战斗的怪物信息
-        String enemyName = enemyUnits[0].getName();
+        String enemyName = enemyUnits[1].getName();
+        if (enemyName == null) {
+            return; // 敌方名称为空，不处理掉落物
+        }
+        
         Monster monster = MonsterManager.getMonsterByName(enemyName);
         
         if (monster != null) {
@@ -1021,20 +1150,30 @@ public class BattleActivity extends AppCompatActivity {
      * 处理后退按钮按下事件
      */
     private void handleBackPressed() {
-        // 确认退出对话框
-        new android.app.AlertDialog.Builder(this)
-            .setTitle("退出战斗")
-            .setMessage("确定要退出战斗吗？这将视为战斗失败。")
-            .setPositiveButton("确定", (dialog, which) -> {
-                // 处理战斗失败
-                if (!battleEnded) {
-                    handleBattleDefeat();
-                } else {
-                    finish();
-                }
-            })
-            .setNegativeButton("取消", null)
-            .show();
+        // 检查Activity是否还在运行
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        
+        try {
+            // 确认退出对话框
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("退出战斗")
+                .setMessage("确定要退出战斗吗？这将视为战斗失败。")
+                .setPositiveButton("确定", (dialog, which) -> {
+                    // 处理战斗失败
+                    if (!battleEnded) {
+                        handleBattleDefeat();
+                    } else {
+                        finish();
+                    }
+                })
+                .setNegativeButton("取消", null)
+                .show();
+        } catch (Exception e) {
+            // 如果显示对话框失败，直接结束Activity
+            finish();
+        }
     }
     
     /**
@@ -1042,6 +1181,9 @@ public class BattleActivity extends AppCompatActivity {
      */
     private void processRoundStart() {
         addBattleLog("=== 第 " + currentRound + " 回合开始 ===");
+        
+        // 处理召唤单位持续时间
+        processSummonDuration();
         
         // 处理所有单位的技能冷却
         for (int i = 0; i < 3; i++) {
@@ -1055,18 +1197,26 @@ public class BattleActivity extends AppCompatActivity {
         
         // 处理所有单位的效果
         processAllUnitEffects();
+        
+        // 重要：更新所有进度条UI显示
+        if (cardAdapter != null) {
+            cardAdapter.updateAllSkillProgress();
+        }
     }
     
     /**
      * 处理单位技能冷却
      */
     private void processUnitSkills(BattleUnit unit) {
-        BattleSkill[] skills = unit.getSkills();
-        if (skills != null) {
-            for (BattleSkill skill : skills) {
-                if (skill != null && skill.getCurrentCooldown() > 0) {
-                    skill.reduceCooldown();
-                    if (unit == playerUnits[0]) {
+        // 直接使用BattleUnit的updateCooldowns方法
+        unit.updateCooldowns();
+        
+        // 记录玩家技能冷却信息
+        if (unit == playerUnits[1]) { // 修正为使用索引1（2号位）
+            BattleSkill[] skills = unit.getSkills();
+            if (skills != null) {
+                for (BattleSkill skill : skills) {
+                    if (skill != null && skill.getCurrentCooldown() > 0) {
                         addBattleLog("玩家技能 " + skill.getName() + " 冷却剩余: " + skill.getCurrentCooldown() + " 回合");
                     }
                 }
@@ -1074,6 +1224,54 @@ public class BattleActivity extends AppCompatActivity {
         }
     }
     
+    /**
+     * 处理召唤单位持续时间
+     */
+    private void processSummonDuration() {
+        boolean needUIUpdate = false;
+        
+        // 处理玩家召唤单位的持续时间
+        for (int i = 0; i < 3; i++) {
+            if (playerUnits[i] != null && playerUnits[i].getType() == BattleUnit.TYPE_SUMMON) {
+                int remainingDuration = playerUnits[i].getSummonDuration();
+                if (remainingDuration > 0) {
+                    remainingDuration--;
+                    playerUnits[i].setSummonDuration(remainingDuration);
+                    
+                    if (remainingDuration <= 0) {
+                        addBattleLog(playerUnits[i].getName() + " 持续时间结束，消失了");
+                        playerUnits[i] = null; // 移除召唤单位
+                        needUIUpdate = true;
+                    } else {
+                        addBattleLog(playerUnits[i].getName() + " 剩余持续时间: " + remainingDuration + " 回合");
+                    }
+                }
+            }
+        }
+        
+        // 处理敌方召唤单位的持续时间（如果有的话）
+        for (int i = 0; i < 3; i++) {
+            if (enemyUnits[i] != null && enemyUnits[i].getType() == BattleUnit.TYPE_SUMMON) {
+                int remainingDuration = enemyUnits[i].getSummonDuration();
+                if (remainingDuration > 0) {
+                    remainingDuration--;
+                    enemyUnits[i].setSummonDuration(remainingDuration);
+                    
+                    if (remainingDuration <= 0) {
+                        addBattleLog(enemyUnits[i].getName() + " 持续时间结束，消失了");
+                        enemyUnits[i] = null; // 移除召唤单位
+                        needUIUpdate = true;
+                    }
+                }
+            }
+        }
+        
+        // 如果有召唤单位消失，更新UI
+        if (needUIUpdate) {
+            updateUI();
+        }
+    }
+
     /**
      * 处理所有单位的效果
      */
@@ -1114,7 +1312,7 @@ public class BattleActivity extends AppCompatActivity {
                             
                             // 检查是否死亡
                             if (enemyUnits[i].getCurrentHealth() <= 0) {
-                                if (enemyUnits[i] == enemyUnits[0]) {
+                                if (enemyUnits[i] == enemyUnits[1]) { // 修正为使用索引1（2号位）
                                     handleEnemyDefeated();
                                 } else {
                                     handlePlayerUnitDefeated(enemyUnits[i]);

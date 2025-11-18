@@ -233,6 +233,25 @@ public class DBHelper extends SQLiteOpenHelper {
                 "is_claimed INTEGER NOT NULL DEFAULT 0," +
                 "UNIQUE(user_id, achievement_type, level)" +
                 ")");
+
+        // 任务表
+        db.execSQL("CREATE TABLE IF NOT EXISTS quests (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "user_id INTEGER NOT NULL," +
+                "quest_id INTEGER NOT NULL," +
+                "is_completed INTEGER NOT NULL DEFAULT 0," +
+                "progress_data TEXT," +
+                "UNIQUE(user_id, quest_id)" +
+                ")");
+
+        // 新手轮回完成标记表
+        db.execSQL("CREATE TABLE IF NOT EXISTS newbie_cycle (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "user_id INTEGER NOT NULL," +
+                "is_completed INTEGER NOT NULL DEFAULT 0," +
+                "completion_time LONG," +
+                "UNIQUE(user_id)" +
+                ")");
     }
 
     /**
@@ -826,6 +845,24 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
+    /**
+     * 检查用户是否存在用户数据
+     * @param userId 用户ID
+     * @return 是否存在用户数据
+     */
+    public boolean hasUserData(int userId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query("user_status", new String[]{"id"}, 
+                    "user_id=?", new String[]{String.valueOf(userId)}, 
+                    null, null, null);
+            return cursor.moveToFirst();
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+    }
+
     // 初始化用户数据
     public void initUserData(int userId) {
         SQLiteDatabase db = getWritableDatabase();
@@ -845,7 +882,19 @@ public class DBHelper extends SQLiteOpenHelper {
             userStatus.put("backpack_cap", Constant.BACKPACK_INIT_CAP);
             userStatus.put("gold", 0);
             userStatus.put("sound_status", 1);
-            userStatus.put("difficulty", Constant.DIFFICULTY_NORMAL);
+            
+            // 检测是否是第一次玩：检查是否有已完成的任务
+            boolean isFirstTimePlaying = getCompletedQuests(userId).isEmpty();
+            if (isFirstTimePlaying) {
+                // 第一次玩使用简单难度
+                userStatus.put("difficulty", Constant.DIFFICULTY_EASY);
+                Log.d("DBHelper", "初始化用户数据: 第一次玩，设置难度为简单");
+            } else {
+                // 老玩家使用普通难度
+                userStatus.put("difficulty", Constant.DIFFICULTY_NORMAL);
+                Log.d("DBHelper", "初始化用户数据: 老玩家，设置难度为普通");
+            }
+            
             userStatus.put("first_collect_time", 0);
             db.insert("user_status", null, userStatus);
 
@@ -969,6 +1018,30 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         cursor.close();
         return isNew;
+    }
+
+    /**
+     * 添加金币
+     */
+    public boolean addGold(int userId, int goldAmount) {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            // 获取当前金币
+            int currentGold = (int) getUserStatus(userId).get("gold");
+            int newGold = currentGold + goldAmount;
+            
+            // 更新金币
+            ContentValues values = new ContentValues();
+            values.put("gold", newGold);
+            
+            int rowsAffected = db.update("user_status", values, 
+                    "user_id=?", new String[]{String.valueOf(userId)});
+            
+            return rowsAffected > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     /**
@@ -1177,6 +1250,7 @@ public class DBHelper extends SQLiteOpenHelper {
     // 更新背包物品（含耐久初始化）
     public Boolean updateBackpackItem(int userId, String itemType, int count) {
         SQLiteDatabase db = getWritableDatabase();
+        Cursor cursor = null; // 将cursor声明移到try块外部
         db.beginTransaction(); // 开启事务
         try {
             // 检查背包容量（仅当增加物品时）
@@ -1184,12 +1258,13 @@ public class DBHelper extends SQLiteOpenHelper {
                 int currentTotal = getBackpackCurrentCount(userId);
                 int cap = getBackpackCapacity(userId);
                 if (currentTotal + count > cap) {
+                    db.setTransactionSuccessful(); // 标记事务成功（虽然没有修改数据）
                     return false; // 容量不足
                 }
             }
 
             // 查询物品是否已存在
-            Cursor cursor = db.query(
+            cursor = db.query(
                     "backpack",
                     new String[]{"item_count", "durability"},
                     "user_id=? AND item_type=?",
@@ -1197,7 +1272,7 @@ public class DBHelper extends SQLiteOpenHelper {
                     null, null, null
             );
 
-            ContentValues values = new ContentValues();
+                ContentValues values = new ContentValues();
             if (cursor.moveToFirst()) {
                 // 物品已存在：更新数量和耐久（工具类需处理耐久）
                 int currentCount = cursor.getInt(0);
@@ -1215,6 +1290,8 @@ public class DBHelper extends SQLiteOpenHelper {
                     db.update("backpack", values, "user_id=? AND item_type=?",
                             new String[]{String.valueOf(userId), itemType});
                 }
+                db.setTransactionSuccessful(); // 标记事务成功
+                return true;
             } else if (count > 0) {
                 // 新物品：插入记录（工具类初始化耐久）
                 values.put("user_id", userId);
@@ -1227,14 +1304,24 @@ public class DBHelper extends SQLiteOpenHelper {
                     values.put("durability", 0); // 非工具无耐久
                 }
                 db.insert("backpack", null, values);
+                db.setTransactionSuccessful(); // 标记事务成功
+                return true;
+            } else {
+                // 物品不存在且数量为0，无需操作
+                db.setTransactionSuccessful(); // 标记事务成功
+                return true;
             }
-            cursor.close();
-            db.setTransactionSuccessful(); // 标记事务成功
-            return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         } finally {
+            try {
+                if (cursor != null) {
+                    cursor.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             db.endTransaction(); // 结束事务（无论成功与否）
         }
     }
@@ -3008,6 +3095,454 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
+    // ========== 任务相关数据库操作方法 ==========
+
+    /**
+     * 获取用户已完成的任务ID列表
+     */
+    public List<Integer> getCompletedQuests(int userId) {
+        List<Integer> completedQuestIds = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(
+                "quests",
+                new String[]{"quest_id"},
+                "user_id = ? AND is_completed = 1",
+                new String[]{String.valueOf(userId)},
+                null, null, null
+        );
+
+        while (cursor.moveToNext()) {
+            completedQuestIds.add(cursor.getInt(0));
+        }
+        cursor.close();
+        return completedQuestIds;
+    }
+
+    /**
+     * 标记任务为已完成
+     */
+    public void markQuestAsCompleted(int userId, int questId) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("is_completed", 1);
+        
+        int rowsAffected = db.update(
+                "quests",
+                values,
+                "user_id = ? AND quest_id = ?",
+                new String[]{String.valueOf(userId), String.valueOf(questId)}
+        );
+
+        if (rowsAffected == 0) {
+            // 如果记录不存在，则插入新记录
+            values.put("user_id", userId);
+            values.put("quest_id", questId);
+            values.put("progress_data", "{}"); // 空进度数据
+            db.insert("quests", null, values);
+        }
+    }
+
+    /**
+     * 获取任务的进度数据
+     */
+    public Map<String, Integer> getQuestProgress(int userId, int questId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(
+                "quests",
+                new String[]{"progress_data"},
+                "user_id = ? AND quest_id = ?",
+                new String[]{String.valueOf(userId), String.valueOf(questId)},
+                null, null, null
+        );
+
+        Map<String, Integer> progress = new HashMap<>();
+        if (cursor.moveToFirst()) {
+            String progressData = cursor.getString(0);
+            if (progressData != null && !progressData.isEmpty()) {
+                try {
+                    Gson gson = new Gson();
+                    // 使用 Map<String, Object> 来安全地处理数字类型
+                    Map<String, Object> rawProgress = gson.fromJson(progressData, new HashMap<String, Object>().getClass());
+                    
+                    // 将 Object 转换为 Integer，处理可能的 Double 类型
+                    for (Map.Entry<String, Object> entry : rawProgress.entrySet()) {
+                        if (entry.getValue() instanceof Integer) {
+                            progress.put(entry.getKey(), (Integer) entry.getValue());
+                        } else if (entry.getValue() instanceof Double) {
+                            // 将 Double 转换为 Integer
+                            progress.put(entry.getKey(), ((Double) entry.getValue()).intValue());
+                        } else if (entry.getValue() instanceof Number) {
+                            // 处理其他数字类型
+                            progress.put(entry.getKey(), ((Number) entry.getValue()).intValue());
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.e("DBHelper", "解析任务进度数据失败", e);
+                }
+            }
+        }
+        cursor.close();
+        return progress;
+    }
+
+    /**
+     * 保存任务进度数据
+     */
+    public void saveQuestProgress(int userId, Map<String, Object> questData) {
+        SQLiteDatabase db = getWritableDatabase();
+        Gson gson = new Gson();
+
+        try {
+            db.beginTransaction();
+            
+            // 存储已完成任务
+            List<Integer> completedQuests = (List<Integer>) questData.get("completed_quests");
+            if (completedQuests != null) {
+                for (int questId : completedQuests) {
+                    markQuestAsCompleted(userId, questId);
+                }
+            }
+
+            // 存储活跃任务进度
+            for (Map.Entry<String, Object> entry : questData.entrySet()) {
+                if (entry.getKey().startsWith("quest_") && entry.getKey().endsWith("_progress")) {
+                    String questIdStr = entry.getKey().replace("quest_", "").replace("_progress", "");
+                    int questId = Integer.parseInt(questIdStr);
+                    
+                    Map<String, Integer> progress = (Map<String, Integer>) entry.getValue();
+                    String progressJson = gson.toJson(progress);
+                    
+                    ContentValues values = new ContentValues();
+                    values.put("user_id", userId);
+                    values.put("quest_id", questId);
+                    values.put("progress_data", progressJson);
+                    values.put("is_completed", 0);
+                    
+                    // 使用REPLACE语句确保唯一性
+                    db.replace("quests", null, values);
+                }
+            }
+
+            // 存储新手轮回完成状态
+            Boolean hasCompletedNewbieCycle = (Boolean) questData.get("has_completed_newbie_cycle");
+            if (hasCompletedNewbieCycle != null) {
+                setNewbieCycleCompleted(userId, hasCompletedNewbieCycle);
+            }
+
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.e("DBHelper", "保存任务进度数据失败", e);
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    /**
+     * 检查用户是否已完成新手轮回
+     */
+    public boolean hasCompletedNewbieCycle(int userId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.query(
+                "newbie_cycle",
+                new String[]{"is_completed"},
+                "user_id = ?",
+                new String[]{String.valueOf(userId)},
+                null, null, null
+        );
+
+        boolean hasCompleted = false;
+        if (cursor.moveToFirst()) {
+            hasCompleted = cursor.getInt(0) == 1;
+        }
+        cursor.close();
+        return hasCompleted;
+    }
+
+    /**
+     * 设置用户新手轮回完成状态
+     */
+    public void setNewbieCycleCompleted(int userId, boolean completed) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("user_id", userId);
+        values.put("is_completed", completed ? 1 : 0);
+        if (completed) {
+            values.put("completion_time", System.currentTimeMillis());
+        }
+        
+        // 使用REPLACE确保唯一性
+        db.replace("newbie_cycle", null, values);
+    }
+
+    /**
+     * 清空用户的所有任务进度（用于调试）
+     */
+    public void clearQuestProgress(int userId) {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            db.beginTransaction();
+            
+            // 删除任务记录
+            db.delete("quests", "user_id = ?", new String[]{String.valueOf(userId)});
+            
+            // 重置新手轮回状态
+            db.delete("newbie_cycle", "user_id = ?", new String[]{String.valueOf(userId)});
+            
+            db.setTransactionSuccessful();
+            Log.d("DBHelper", "已清空用户 " + userId + " 的任务进度");
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    // ========== 任务相关数据库操作方法结束 ==========
+
+//    public Integer incrementSynthesisTimes(int userId) {
+//        SQLiteDatabase db = getWritableDatabase();
+//        try {
+//            Cursor cursor = db.query(
+//                    "user_status",
+//                    new String[]{"synthesis_times"},
+//                    "user_id = ?",
+//                    new String[]{String.valueOf(userId)},
+//                    null, null, null
+//            );
+//
+//            int currentCount = 0;
+//            if (cursor.moveToFirst()) {
+//                currentCount = cursor.getInt(cursor.getColumnIndexOrThrow("synthesis_times"));
+//            }
+//            cursor.close();
+//
+//            int newCount = currentCount + 1;
+//            ContentValues values = new ContentValues();
+//            values.put("synthesis_times", newCount);
+//            db.update("user_status", values, "user_id = ?", new String[]{String.valueOf(userId)});
+//
+//            return newCount;
+//        } catch (Exception e) {
+//            Log.e("DBHelper", "更新合成次数失败", e);
+//            return 0;
+//        }
+//    }
+//
+//    // ========== 任务相关数据库操作方法 ==========
+//
+//    /**
+//     * 获取用户已完成的任务ID列表
+//     */
+//    public List<Integer> getCompletedQuests(int userId) {
+//        List<Integer> completedQuestIds = new ArrayList<>();
+//        SQLiteDatabase db = getReadableDatabase();
+//        Cursor cursor = db.query(
+//                "quests",
+//                new String[]{"quest_id"},
+//                "user_id = ? AND is_completed = 1",
+//                new String[]{String.valueOf(userId)},
+//                null, null, null
+//        );
+//
+//        while (cursor.moveToNext()) {
+//            completedQuestIds.add(cursor.getInt(0));
+//        }
+//        cursor.close();
+//        return completedQuestIds;
+//    }
+//
+//    /**
+//     * 标记任务为已完成
+//     */
+//    public void markQuestAsCompleted(int userId, int questId) {
+//        SQLiteDatabase db = getWritableDatabase();
+//        ContentValues values = new ContentValues();
+//        values.put("is_completed", 1);
+//
+//        int rowsAffected = db.update(
+//                "quests",
+//                values,
+//                "user_id = ? AND quest_id = ?",
+//                new String[]{String.valueOf(userId), String.valueOf(questId)}
+//        );
+//
+//        if (rowsAffected == 0) {
+//            // 如果记录不存在，则插入新记录
+//            values.put("user_id", userId);
+//            values.put("quest_id", questId);
+//            values.put("progress_data", "{}"); // 空进度数据
+//            db.insert("quests", null, values);
+//        }
+//    }
+//
+//    /**
+//     * 获取任务的进度数据
+//     */
+//    public Map<String, Integer> getQuestProgress(int userId, int questId) {
+//        SQLiteDatabase db = getReadableDatabase();
+//        Cursor cursor = db.query(
+//                "quests",
+//                new String[]{"progress_data"},
+//                "user_id = ? AND quest_id = ?",
+//                new String[]{String.valueOf(userId), String.valueOf(questId)},
+//                null, null, null
+//        );
+//
+//        Map<String, Integer> progress = new HashMap<>();
+//        if (cursor.moveToFirst()) {
+//            String progressData = cursor.getString(0);
+//            if (progressData != null && !progressData.isEmpty()) {
+//                try {
+//                    Gson gson = new Gson();
+//                    progress = gson.fromJson(progressData, new HashMap<String, Integer>().getClass());
+//                } catch (Exception e) {
+//                    Log.e("DBHelper", "解析任务进度数据失败", e);
+//                }
+//            }
+//        }
+//        cursor.close();
+//        return progress;
+//    }
+//
+//    /**
+//     * 保存任务进度数据
+//     */
+//    public void saveQuestProgress(int userId, Map<String, Object> questData) {
+//        SQLiteDatabase db = getWritableDatabase();
+//        Gson gson = new Gson();
+//
+//        try {
+//            db.beginTransaction();
+//
+//            // 存储已完成任务
+//            List<Integer> completedQuests = (List<Integer>) questData.get("completed_quests");
+//            if (completedQuests != null) {
+//                for (int questId : completedQuests) {
+//                    markQuestAsCompleted(userId, questId);
+//                }
+//            }
+//
+//            // 存储活跃任务进度
+//            for (Map.Entry<String, Object> entry : questData.entrySet()) {
+//                if (entry.getKey().startsWith("quest_") && entry.getKey().endsWith("_progress")) {
+//                    String questIdStr = entry.getKey().replace("quest_", "").replace("_progress", "");
+//                    int questId = Integer.parseInt(questIdStr);
+//
+//                    Map<String, Integer> progress = (Map<String, Integer>) entry.getValue();
+//                    String progressJson = gson.toJson(progress);
+//
+//                    ContentValues values = new ContentValues();
+//                    values.put("user_id", userId);
+//                    values.put("quest_id", questId);
+//                    values.put("progress_data", progressJson);
+//                    values.put("is_completed", 0);
+//
+//                    // 使用REPLACE语句确保唯一性
+//                    db.replace("quests", null, values);
+//                }
+//            }
+//
+//            // 存储新手轮回完成状态
+//            Boolean hasCompletedNewbieCycle = (Boolean) questData.get("has_completed_newbie_cycle");
+//            if (hasCompletedNewbieCycle != null) {
+//                setNewbieCycleCompleted(userId, hasCompletedNewbieCycle);
+//            }
+//
+//            db.setTransactionSuccessful();
+//        } catch (Exception e) {
+//            Log.e("DBHelper", "保存任务进度数据失败", e);
+//        } finally {
+//            db.endTransaction();
+//        }
+//    }
+//
+//    /**
+//     * 检查用户是否已完成新手轮回
+//     */
+//    public boolean hasCompletedNewbieCycle(int userId) {
+//        SQLiteDatabase db = getReadableDatabase();
+//        Cursor cursor = db.query(
+//                "newbie_cycle",
+//                new String[]{"is_completed"},
+//                "user_id = ?",
+//                new String[]{String.valueOf(userId)},
+//                null, null, null
+//        );
+//
+//        boolean hasCompleted = false;
+//        if (cursor.moveToFirst()) {
+//            hasCompleted = cursor.getInt(0) == 1;
+//        }
+//        cursor.close();
+//        return hasCompleted;
+//    }
+//
+//    /**
+//     * 设置用户新手轮回完成状态
+//     */
+//    public void setNewbieCycleCompleted(int userId, boolean completed) {
+//        SQLiteDatabase db = getWritableDatabase();
+//        ContentValues values = new ContentValues();
+//        values.put("user_id", userId);
+//        values.put("is_completed", completed ? 1 : 0);
+//        if (completed) {
+//            values.put("completion_time", System.currentTimeMillis());
+//        }
+//
+//        // 使用REPLACE确保唯一性
+//        db.replace("newbie_cycle", null, values);
+//    }
+//
+//    /**
+//     * 清空用户的所有任务进度（用于调试）
+//     */
+//    public void clearQuestProgress(int userId) {
+//        SQLiteDatabase db = getWritableDatabase();
+//        try {
+//            db.beginTransaction();
+//
+//            // 删除任务记录
+//            db.delete("quests", "user_id = ?", new String[]{String.valueOf(userId)});
+//
+//            // 重置新手轮回状态
+//            db.delete("newbie_cycle", "user_id = ?", new String[]{String.valueOf(userId)});
+//
+//            db.setTransactionSuccessful();
+//            Log.d("DBHelper", "已清空用户 " + userId + " 的任务进度");
+//        } finally {
+//            db.endTransaction();
+//        }
+//    }
+//
+//    // ========== 任务相关数据库操作方法结束 ==========
+//     */
+//    public Integer incrementSynthesisTimes(int userId) {
+//        SQLiteDatabase db = getWritableDatabase();
+//        try {
+//            Cursor cursor = db.query(
+//                    "user_status",
+//                    new String[]{"synthesis_times"},
+//                    "user_id = ?",
+//                    new String[]{String.valueOf(userId)},
+//                    null, null, null
+//            );
+//
+//            int currentCount = 0;
+//            if (cursor.moveToFirst()) {
+//                currentCount = cursor.getInt(cursor.getColumnIndexOrThrow("synthesis_times"));
+//            }
+//            cursor.close();
+//
+//            int newCount = currentCount + 1;
+//            ContentValues values = new ContentValues();
+//            values.put("synthesis_times", newCount);
+//            db.update("user_status", values, "user_id = ?", new String[]{String.valueOf(userId)});
+//
+//            return newCount;
+//        } catch (Exception e) {
+//            Log.e("DBHelper", "更新合成次数失败", e);
+//            return 0;
+//        }
+//    }
+
     /**
      * 增加用户的熔炼次数（+1）
      * @param userId 用户ID
@@ -4639,6 +5174,69 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put("level", newLevel);
         db.update("user_status", values, "user_id=?", 
                 new String[]{String.valueOf(userId)});
+    }
+
+    /**
+     * 初始化用户数据
+     * @param userId 用户ID
+     */
+    public void initializeUserData(int userId) {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            // 检查是否已存在用户数据
+            if (hasUserData(userId)) {
+                return; // 如果已存在，则不需要初始化
+            }
+
+            // 初始化用户状态数据
+            ContentValues userStatus = new ContentValues();
+            userStatus.put("user_id", userId);
+            userStatus.put("life", Constant.INIT_LIFE);
+            userStatus.put("hunger", Constant.INIT_HUNGER);
+            userStatus.put("thirst", Constant.INIT_THIRST);
+            userStatus.put("stamina", Constant.INIT_STAMINA);
+            userStatus.put("backpack_cap", Constant.BACKPACK_INIT_CAP);
+            userStatus.put("gold", 0);
+            userStatus.put("sound_status", 1);
+            userStatus.put("difficulty", Constant.DIFFICULTY_NORMAL);
+            userStatus.put("first_collect_time", 0);
+            userStatus.put("is_synthesis_unlocked", 1);
+            userStatus.put("is_building_unlocked", 1);
+            userStatus.put("is_cooking_unlocked", 0);
+            userStatus.put("is_smelting_unlocked", 0);
+            userStatus.put("is_trading_unlocked", 0);
+            userStatus.put("is_sleep_unlocked", 0);
+            userStatus.put("is_reincarnation_unlocked", 0);
+            userStatus.put("hope_points", 0);
+            userStatus.put("game_hour", Constant.GAME_HOUR_DEFAULT);
+            userStatus.put("game_day", Constant.GAME_DAY_DEFAULT);
+            userStatus.put("temperature", Constant.TEMPERATURE_DEFAULT);
+            userStatus.put("current_map", "main_world");
+            userStatus.put("global_collect_times", 0);
+            userStatus.put("exploration_times", 0);
+            userStatus.put("synthesis_times", 0);
+            userStatus.put("smelting_times", 0);
+            userStatus.put("trading_times", 0);
+            userStatus.put("reincarnation_times", 0);
+            userStatus.put("last_refresh_day", 1);
+            userStatus.put("exp", 0);
+            userStatus.put("level", 1);
+            userStatus.put("is_test_initialized", 0);
+            
+            // 设置随机出生点
+            Random random = new Random();
+            int initX = random.nextInt(Constant.MAP_MAX) + 1;
+            int initY = random.nextInt(Constant.MAP_MAX) + 1;
+            userStatus.put("current_x", initX);
+            userStatus.put("current_y", initY);
+            
+            db.insert("user_status", null, userStatus);
+            
+            Log.d("DBHelper", "用户数据初始化成功：用户ID=" + userId);
+        } catch (Exception e) {
+            Log.e("DBHelper", "用户数据初始化失败", e);
+            e.printStackTrace();
+        }
     }
 
 }
