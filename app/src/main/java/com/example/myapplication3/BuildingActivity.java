@@ -781,6 +781,19 @@ public class BuildingActivity extends BaseActivity {
             backgroundView.invalidate();
         }
     }
+    
+    /**
+     * 重新加载所有建筑的建造数量并更新显示
+     */
+    private void loadBuildingCounts() {
+        // 重新初始化建筑列表以更新计数
+        LinearLayout container = findViewById(R.id.container);
+        if (container != null) {
+            container.removeAllViews();
+            initBuildingList(container);
+            initHouseUpgradeOptions(container);
+        }
+    }
 
     /**
      * 检查是否从基地进入

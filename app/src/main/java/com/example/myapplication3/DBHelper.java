@@ -2934,6 +2934,31 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         return capacity;
     }
+    
+    /**
+     * 更新用户的背包容量
+     * @param userId 用户ID
+     * @param newCapacity 新的背包容量
+     * @return 是否更新成功
+     */
+    public boolean updateBackpackCapacity(int userId, int newCapacity) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("backpack_cap", newCapacity);
+        
+        int rowsAffected = db.update("user_status", values, "user_id = ?", 
+                new String[]{String.valueOf(userId)});
+        
+        boolean success = rowsAffected > 0;
+        if (success) {
+            Log.d("DBHelper", "用户" + userId + "背包容量更新为: " + newCapacity);
+        } else {
+            Log.e("DBHelper", "用户" + userId + "背包容量更新失败");
+        }
+        
+        return success;
+    }
+    
     /**
      * 更新区域采集次数到数据库
      * @param userId 用户ID
