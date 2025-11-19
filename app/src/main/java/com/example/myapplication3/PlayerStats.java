@@ -77,7 +77,7 @@ public class PlayerStats {
      * @param maxCooldown 最大冷却值
      * @return 进度百分比
      */
-    public int getAttackCooldownPercentage(int currentCooldown, int maxCooldown) {
+    public int getAttackCooldownPercentage(float currentCooldown, int maxCooldown) {
         if (maxCooldown <= 0) return 0;
         return (int) (((maxCooldown - currentCooldown) * 100.0) / maxCooldown);
     }

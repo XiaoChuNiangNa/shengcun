@@ -41,7 +41,8 @@ public class StatusEffectManager {
         // 首先处理状态效果管理器中的效果
         List<PersistentEffect> effects = USER_EFFECTS.get(userId);
         if (effects != null && !effects.isEmpty()) {
-            DBHelper dbHelper = DBHelper.getInstance(null);
+            // 修复：使用MyApplication的Context而不是null
+            DBHelper dbHelper = DBHelper.getInstance(MyApplication.getAppContext());
             Map<String, Object> userStatus = dbHelper.getUserStatus(userId);
             int life = (int) userStatus.get("life");
 
@@ -50,7 +51,12 @@ public class StatusEffectManager {
                 PersistentEffect effect = iterator.next();
                 // 处理生命恢复效果
                 if ("LIFE_REGEN".equals(effect.type)) {
-                    int newLife = Math.min(100, life + effect.value);
+                    // 获取等级加成的最大生命值
+                    LevelExperienceManager levelManager = LevelExperienceManager.getInstance(MyApplication.getAppContext());
+                    int lifeBonus = levelManager.getTotalHpBonus();
+                    int maxLife = 100 + lifeBonus;
+                    
+                    int newLife = Math.min(maxLife, life + effect.value);
                     dbHelper.updateUserStatus(userId, Collections.singletonMap("life", newLife));
                     // 更新当前生命用于叠加效果
                     life = newLife;

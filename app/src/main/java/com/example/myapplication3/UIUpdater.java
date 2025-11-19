@@ -154,9 +154,19 @@ public class UIUpdater {
 
     // 更新生命显示
     private void updateLifeDisplay() {
-        activity.life = Math.max(0, Math.min(100, activity.life));
+        // 计算最大生命值（基础100 + 等级加成）
+        LevelExperienceManager levelManager = LevelExperienceManager.getInstance(activity);
+        int baseLife = 100;
+        int lifeBonus = levelManager.getTotalHpBonus();
+        int maxLife = baseLife + lifeBonus;
+        
+        // 应用生命值上限
+        activity.life = Math.max(0, Math.min(maxLife, activity.life));
+        
+        // 显示生命值和上限
+//        activity.tvLife.setText("生命：" + activity.life + "/" + maxLife);
         activity.tvLife.setText("生命：" + activity.life);
-        activity.tvLife.setTextColor(activity.life <= 30 ?
+        activity.tvLife.setTextColor(activity.life <= (maxLife * 0.3) ?
                 activity.getResources().getColor(android.R.color.holo_red_dark) :
                 activity.getResources().getColor(android.R.color.holo_green_dark));
     }

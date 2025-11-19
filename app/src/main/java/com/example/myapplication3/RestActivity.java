@@ -267,11 +267,16 @@ public class RestActivity extends BaseActivity {
                     return false;
                 }
 
-                // 计算新状态（限制上下限）
+                // 获取等级加成的最大生命值
+                LevelExperienceManager levelManager = LevelExperienceManager.getInstance(RestActivity.this);
+                int lifeBonus = levelManager.getTotalHpBonus();
+                int maxLife = 100 + lifeBonus;
+                
+                // 计算新状态（限制上下限），生命值使用动态上限
                 int newHunger = Math.max(0, hunger - hungerCost);
                 int newThirst = Math.max(0, thirst - thirstCost);
                 int newStamina = Math.min(100, stamina + staminaRecover);
-                int newLife = Math.min(100, life + lifeRecover);
+                int newLife = Math.min(maxLife, life + lifeRecover);
 
                 // 更新数据库
                 Map<String, Object> updates = new HashMap<>();

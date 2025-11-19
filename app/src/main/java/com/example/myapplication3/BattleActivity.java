@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -349,6 +350,19 @@ public class BattleActivity extends AppCompatActivity {
      */
     private void updateUI() {
         updateManualAutoText();
+        
+        // 根据自动/手动模式显示或隐藏底部按钮
+        if (autoBattleMode) {
+            // 自动模式下隐藏底部按钮
+            btnAttack.setVisibility(View.GONE);
+            btnSkill.setVisibility(View.GONE);
+            btnEndTurn.setVisibility(View.GONE);
+        } else {
+            // 手动模式下显示底部按钮
+            btnAttack.setVisibility(View.VISIBLE);
+            btnSkill.setVisibility(View.VISIBLE);
+            btnEndTurn.setVisibility(View.VISIBLE);
+        }
 
         // 使用新的适配器系统更新所有卡牌
         if (cardAdapter != null) {
@@ -629,13 +643,17 @@ public class BattleActivity extends AppCompatActivity {
         else if (skillLevel == 3) healthRatio = 1.0; // Lv3: 100%
 
         // 创建召唤单位
+        // 为分身添加基础攻击技能
+        BattleSkill basicAttackSkill = new BattleSkill("攻击", 0, 0); // 无冷却的攻击技能
+        BattleSkill[] summonSkills = new BattleSkill[]{basicAttackSkill};
+        
         BattleUnit summonedUnit = new BattleUnit(
-            "召唤分身",
+            "分身",                    // 改名为"分身"
             (int)(caster.getMaxHealth() * healthRatio), // 根据等级调整生命值
-            caster.getAttack() / 2,     // 一半的攻击力
+            caster.getAttack(),         // 继承完整攻击力
             caster.getDefense() / 2,    // 一半的防御力
             caster.getSpeed(),          // 相同的速度
-            new BattleSkill[0],         // 无技能
+            summonSkills,              // 添加攻击技能
             BattleUnit.TYPE_SUMMON     // 召唤单位类型
         );
 
@@ -763,17 +781,26 @@ public class BattleActivity extends AppCompatActivity {
 
     /**
      * 选择敌方攻击目标
+     * 修改为优先攻击分身单位
      */
     private BattleUnit selectEnemyTarget() {
-        // 优先攻击玩家主单位（2号位，索引1）
+        // 优先攻击召唤单位（分身）
+        for (int i = 0; i < 3; i++) {
+            if (playerUnits[i] != null && playerUnits[i].getCurrentHealth() > 0 && 
+                playerUnits[i].getType() == BattleUnit.TYPE_SUMMON) {
+                addBattleLog("敌人优先攻击分身: " + playerUnits[i].getName());
+                return playerUnits[i];
+            }
+        }
+        
+        // 如果没有召唤单位，攻击玩家主单位（2号位，索引1）
         if (playerUnits[1] != null && playerUnits[1].getCurrentHealth() > 0) {
             return playerUnits[1];
         }
 
-        // 如果没有主单位，攻击召唤单位（优先1号位和3号位）
+        // 最后攻击其他存活的玩家单位
         for (int i = 0; i < 3; i++) {
-            if (i != 1 && playerUnits[i] != null && playerUnits[i].getCurrentHealth() > 0) {
-                addBattleLog("敌人选择攻击召唤单位: " + playerUnits[i].getName());
+            if (playerUnits[i] != null && playerUnits[i].getCurrentHealth() > 0) {
                 return playerUnits[i];
             }
         }
@@ -1150,6 +1177,9 @@ public class BattleActivity extends AppCompatActivity {
      * 处理后退按钮按下事件
      */
     private void handleBackPressed() {
+        // 添加返回按钮跳转日志
+        Log.d("Navigation", "从 BattleActivity 返回到上一个页面");
+        
         // 检查Activity是否还在运行
         if (isFinishing() || isDestroyed()) {
             return;

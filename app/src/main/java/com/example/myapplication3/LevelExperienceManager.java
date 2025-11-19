@@ -2,7 +2,11 @@ package com.example.myapplication3;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 import android.widget.Toast;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -160,7 +164,27 @@ public class LevelExperienceManager {
         int newHpBonus = currentHpBonus + 5;
         editor.putInt("total_hp_bonus", newHpBonus);
         
-        // 2. 随机给予5-20金币奖励
+        // 2. 增加当前生命值5点（关键修复）
+        DBHelper dbHelper = DBHelper.getInstance(context);
+        int userId = MyApplication.currentUserId;
+        if (userId != -1) {
+            // 获取当前生命值
+            Map<String, Object> userStatus = dbHelper.getUserStatus(userId);
+            int currentLife = userStatus != null ? (int) userStatus.get("life") : 100;
+            int maxLife = 100 + newHpBonus; // 基础100 + 新的加成
+            
+            // 增加当前生命值，但不超过新的上限
+            int newCurrentLife = Math.min(currentLife + 5, maxLife);
+            
+            // 更新数据库中的当前生命值
+            Map<String, Object> updateData = new HashMap<>();
+            updateData.put("life", newCurrentLife);
+            dbHelper.updateUserStatus(userId, updateData);
+            
+            Log.d("LevelUp", "升级后生命值更新: " + currentLife + " -> " + newCurrentLife + " (上限: " + maxLife + ")");
+        }
+        
+        // 3. 随机给予5-20金币奖励
         int randomGold = 5 + random.nextInt(16); // 5-20随机数
         
         // 记录升级奖励信息

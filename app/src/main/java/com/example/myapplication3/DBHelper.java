@@ -15,6 +15,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -118,6 +119,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 "item_count INTEGER NOT NULL DEFAULT 0," +
                 "durability INTEGER NOT NULL DEFAULT 0," +
                 "is_equipped INTEGER NOT NULL DEFAULT 0," + // 新增：0=未装备，1=已装备（仅工具有效）
+                "position INTEGER DEFAULT -1," + // 新增：位置信息，-1表示未分配位置
                 "UNIQUE(user_id, item_type))");
 
         // 装备表
@@ -589,6 +591,37 @@ public class DBHelper extends SQLiteOpenHelper {
             } catch (Exception e) {
                 // 如果列已经存在，忽略错误
                 Log.d("DBHelper", "难度解锁字段已存在，跳过添加");
+            }
+        }
+
+        if (oldVersion < 30) {
+            // 版本30升级逻辑：为backpack表添加position列
+            try {
+                // 添加position列，默认为-1表示未分配位置
+                db.execSQL("ALTER TABLE backpack ADD COLUMN position INTEGER DEFAULT -1");
+                
+                // 为所有用户的背包物品分配初始位置
+                Cursor userCursor = db.rawQuery("SELECT DISTINCT user_id FROM backpack", null);
+                if (userCursor != null) {
+                    while (userCursor.moveToNext()) {
+                        int userId = userCursor.getInt(0);
+                        Cursor itemCursor = db.rawQuery("SELECT id FROM backpack WHERE user_id = ?", new String[]{String.valueOf(userId)});
+                        if (itemCursor != null) {
+                            int position = 0;
+                            while (itemCursor.moveToNext()) {
+                                int itemId = itemCursor.getInt(0);
+                                db.execSQL("UPDATE backpack SET position = ? WHERE id = ?", 
+                                        new Object[]{position, itemId});
+                                position++;
+                            }
+                            itemCursor.close();
+                        }
+                    }
+                    userCursor.close();
+                }
+                Log.d("DBHelper", "成功添加position列并分配初始位置");
+            } catch (Exception e) {
+                Log.e("DBHelper", "添加position列失败: " + e.getMessage());
             }
         }
 
@@ -1213,19 +1246,30 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
-    // 获取背包
+    // 获取背包（按位置排序）
     public Map<String, Integer> getBackpack(int userId) {
-        Map<String, Integer> backpack = new HashMap<>();
+        LinkedHashMap<String, Integer> backpack = new LinkedHashMap<>();
         SQLiteDatabase db = getReadableDatabase();
         Cursor cursor = null;
         try {
-            cursor = db.query("backpack", null, "user_id=?",
-                    new String[]{String.valueOf(userId)}, null, null, null);
+            // 按position升序排序
+            cursor = db.query("backpack", null, "user_id=? AND position >= 0",
+                    new String[]{String.valueOf(userId)}, null, null, "position ASC");
             while (cursor.moveToNext()) {
                 String itemType = cursor.getString(cursor.getColumnIndexOrThrow("item_type"));
                 int count = cursor.getInt(cursor.getColumnIndexOrThrow("item_count"));
                 backpack.put(itemType, count);
             }
+            
+            // 然后添加没有设置位置的物品（position = -1）
+            Cursor cursorUnpositioned = db.query("backpack", null, "user_id=? AND position = -1",
+                    new String[]{String.valueOf(userId)}, null, null, null);
+            while (cursorUnpositioned.moveToNext()) {
+                String itemType = cursorUnpositioned.getString(cursorUnpositioned.getColumnIndexOrThrow("item_type"));
+                int count = cursorUnpositioned.getInt(cursorUnpositioned.getColumnIndexOrThrow("item_count"));
+                backpack.put(itemType, count);
+            }
+            cursorUnpositioned.close();
         } finally {
             if (cursor != null) cursor.close();
             // 重要修复：不要关闭数据库连接，由单例模式统一管理
@@ -1233,9 +1277,31 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         return backpack;
     }
+    
+    // 获取物品位置
+    public int getBackpackItemPosition(int userId, String itemType) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query("backpack", new String[]{"position"}, 
+                    "user_id=? AND item_type=?",
+                    new String[]{String.valueOf(userId), itemType}, null, null, null);
+            if (cursor.moveToFirst()) {
+                return cursor.getInt(0);
+            }
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+        return -1; // 表示未找到
+    }
 
-    // 更新背包物品（含耐久初始化）
+    // 更新背包物品（含耐久初始化）- 支持位置存储
     public Boolean updateBackpackItem(int userId, String itemType, int count) {
+        return updateBackpackItem(userId, itemType, count, -1);
+    }
+    
+    // 更新背包物品（带位置参数）
+    public Boolean updateBackpackItem(int userId, String itemType, int count, int position) {
         SQLiteDatabase db = getWritableDatabase();
         Cursor cursor = null; // 将cursor声明移到try块外部
         db.beginTransaction(); // 开启事务
@@ -1253,7 +1319,7 @@ public class DBHelper extends SQLiteOpenHelper {
             // 查询物品是否已存在
             cursor = db.query(
                     "backpack",
-                    new String[]{"item_count", "durability"},
+                    new String[]{"item_count", "durability", "position"},
                     "user_id=? AND item_type=?",
                     new String[]{String.valueOf(userId), itemType},
                     null, null, null
@@ -1270,6 +1336,10 @@ public class DBHelper extends SQLiteOpenHelper {
                             new String[]{String.valueOf(userId), itemType});
                 } else {
                     values.put("item_count", newCount);
+                    // 如果指定了位置且为有效位置，则更新位置
+                    if (position >= 0) {
+                        values.put("position", position);
+                    }
                     // 若为工具且是新物品，初始化耐久（修复：传入userId获取科技加成后的耐久）
                     if (count > 0 && isToolItem(itemType) && currentCount == 0) {
                         values.put("durability", ToolUtils.getToolInitialDurability(itemType, userId));
@@ -1284,6 +1354,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 values.put("user_id", userId);
                 values.put("item_type", itemType);
                 values.put("item_count", count);
+                values.put("position", position); // 设置位置，-1表示未指定位置
                 values.put("is_equipped", 0); // 默认未装备
                 if (isToolItem(itemType)) {
                     values.put("durability", ToolUtils.getToolInitialDurability(itemType, userId));
@@ -1311,6 +1382,11 @@ public class DBHelper extends SQLiteOpenHelper {
             }
             db.endTransaction(); // 结束事务（无论成功与否）
         }
+    }
+    
+    // 添加背包物品（带位置参数）
+    public void addBackpackItem(int userId, String itemType, int count, int position) {
+        updateBackpackItem(userId, itemType, count, position);
     }
 
     // 获取背包当前物品总数
@@ -4612,7 +4688,7 @@ public class DBHelper extends SQLiteOpenHelper {
             // 定义所有成就类型和等级
             String[] achievementTypes = {
                     "resource_collect", "exploration", "synthesis", "building",
-                    "cooking", "smelting", "trading", "reincarnation"
+                    "cooking", "smelting", "trading", "reincarnation", "survival"
             };
 
             for (String type : achievementTypes) {
@@ -4656,8 +4732,7 @@ public class DBHelper extends SQLiteOpenHelper {
         try {
             // 先检查achievements表是否存在
             if (!isTableExists(db, "achievements")) {
-                // 如果表不存在，先创建表并初始化数据
-                createAchievementsTable(db);
+                // 表已在onCreate中创建，直接初始化用户成就数据
                 initUserAchievements(userId);
             }
 
@@ -5024,6 +5099,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
         if (rowsDeleted > 0) {
             Log.d("DBHelper", "删除背包物品：" + itemName);
+            // 删除后可以考虑更新其他物品的位置，这里暂时不处理，保持简单
         } else {
             Log.w("DBHelper", "删除背包物品失败，物品不存在：" + itemName);
         }

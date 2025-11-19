@@ -249,7 +249,8 @@ public class RandomEventManager {
     public static void applyEventEffects(int userId, RandomEvent event) {
         if (event == null) return;
         
-        DBHelper dbHelper = DBHelper.getInstance(null);
+        // 修复：使用MyApplication的Context而不是null
+        DBHelper dbHelper = DBHelper.getInstance(MyApplication.getAppContext());
         Map<String, Object> userStatus = dbHelper.getUserStatus(userId);
         
         switch (event.type) {
@@ -327,7 +328,8 @@ public class RandomEventManager {
         List<StatusEffect> effects = USER_STATUS_EFFECTS.get(userId);
         if (effects == null || effects.isEmpty()) return;
         
-        DBHelper dbHelper = DBHelper.getInstance(null);
+        // 修复：使用MyApplication的Context而不是null
+        DBHelper dbHelper = DBHelper.getInstance(MyApplication.getAppContext());
         Map<String, Object> userStatus = dbHelper.getUserStatus(userId);
         
         Iterator<StatusEffect> iterator = effects.iterator();

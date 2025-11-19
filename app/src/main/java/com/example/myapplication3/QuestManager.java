@@ -253,6 +253,12 @@ public class QuestManager {
     private boolean shouldActivateQuest(UserQuestData userData, Quest quest) {
         int questIndex = allQuests.indexOf(quest);
         
+        // 检查该任务是否已完成
+        Quest userQuest = getQuestByIdForUser(userData, quest.getId());
+        if (userQuest != null && userQuest.isCompleted()) {
+            return false; // 已完成的任务不再激活
+        }
+        
         // 第一个任务总是激活
         if (questIndex == 0) {
             return true;
@@ -376,12 +382,6 @@ public class QuestManager {
         
         // 显示完成提示
         showQuestCompletionToast(quest);
-        
-        // 激活下一个任务
-        activateNextQuest(userId, userData);
-        
-        // 保存进度
-        saveQuestProgress(userId, userData);
         
         Log.d("QuestManager", "用户" + userId + "任务完成: " + quest.getTitle());
     }
@@ -507,11 +507,12 @@ public class QuestManager {
             return QUEST_STATUS_HIDDEN;
         }
         
+        // 检查是否已标记为完成
         if (currentQuest.isCompleted()) {
             return QUEST_STATUS_COMPLETED;
         }
         
-        // 检查任务是否完成
+        // 检查是否满足完成条件但尚未标记为完成
         if (currentQuest.checkCompletion()) {
             return QUEST_STATUS_CLAIMABLE;
         }
@@ -526,12 +527,19 @@ public class QuestManager {
         UserQuestData userData = getUserQuestData(userId);
         Quest currentQuest = userData.currentActiveQuest;
         
-        if (currentQuest == null || !currentQuest.checkCompletion()) {
+        if (currentQuest == null || currentQuest.isCompleted() || !currentQuest.checkCompletion()) {
             return false;
         }
         
         // 完成任务并发放奖励
         completeQuestForUser(userId, userData, currentQuest);
+        
+        // 强制激活下一个任务
+        activateNextQuest(userId, userData);
+        
+        // 保存进度
+        saveQuestProgress(userId, userData);
+        
         return true;
     }
     

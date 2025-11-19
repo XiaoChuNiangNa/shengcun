@@ -103,11 +103,55 @@ public class AchievementsActivity extends AppCompatActivity {
         // 按等级排序
         filteredAchievements.sort((a1, a2) -> Integer.compare(a1.getLevel(), a2.getLevel()));
 
-        // 只显示当前可完成的最高等级成就
-        AchievementItem nextAchievement = getNextAchievementToComplete(filteredAchievements);
-        if (nextAchievement != null) {
-            addAchievementItem(nextAchievement, filteredAchievements);
+        if (!filteredAchievements.isEmpty()) {
+            // 只显示用户当前应该看到的成就等级
+            AchievementItem nextAchievement = findNextAchievementToShow(filteredAchievements);
+            if (nextAchievement != null) {
+                addAchievementItem(nextAchievement, filteredAchievements);
+            }
+        } else {
+            // 如果没有该类型的成就，显示提示信息
+            TextView emptyText = new TextView(this);
+            emptyText.setText("暂无相关成就数据");
+            emptyText.setTextColor(getResources().getColor(R.color.text_secondary));
+            emptyText.setTextSize(14);
+            emptyText.setPadding(0, 8, 0, 16);
+            achievementsContainer.addView(emptyText);
         }
+    }
+    
+    private AchievementItem findNextAchievementToShow(List<AchievementItem> achievements) {
+        if (achievements.isEmpty()) {
+            return null;
+        }
+        
+        // 找出用户应该看到的下一个成就
+        // 逻辑：
+        // 1. 从等级1开始检查
+        // 2. 如果找到一个未完成的成就，直接返回
+        // 3. 如果当前等级已完成且已领取，继续查找下一个等级
+        // 4. 如果当前等级已完成但未领取，则只显示这个成就（不显示下一个）
+        
+        for (int i = 0; i < achievements.size(); i++) {
+            AchievementItem current = achievements.get(i);
+            
+            // 如果当前成就未完成，显示它
+            if (!current.isCompleted()) {
+                return current;
+            } 
+            // 如果当前成就是最后一个，直接返回
+            else if (i == achievements.size() - 1) {
+                return current;
+            } 
+            // 如果当前成就已完成但未领取，只显示这个成就
+            else if (current.isCompleted() && !current.isClaimed()) {
+                return current;
+            } 
+            // 如果当前成就已完成且已领取，继续查找下一个等级
+        }
+        
+        // 如果所有成就都已完成且已领取，显示最高等级成就
+        return achievements.get(achievements.size() - 1);
     }
 
     private AchievementItem getNextAchievementToComplete(List<AchievementItem> achievements) {

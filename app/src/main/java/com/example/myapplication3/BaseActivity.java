@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -43,6 +44,9 @@ public class BaseActivity extends AppCompatActivity implements View.OnClickListe
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                // 添加返回按钮跳转日志
+                Log.d("Navigation", "从 BaseActivity 返回到标题页");
+                
                 // 返回标题页
                 Intent intent = new Intent(BaseActivity.this, TitleActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -111,6 +115,9 @@ public class BaseActivity extends AppCompatActivity implements View.OnClickListe
             // 跳转到对战页面
             intent.setClass(this, BattleActivity.class);
         } else if (v.getId() == R.id.btn_back) {
+            // 添加返回按钮跳转日志
+            Log.d("Navigation", "从 BaseActivity 返回到标题页");
+            
             // 返回标题页
             intent.setClass(this, TitleActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);

@@ -222,13 +222,8 @@ public class WarehouseActivity extends AppCompatActivity {
         btnBack.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // 检查是否从基地进入，如果是则返回基地
-                if (isFromBase()) {
-                    startActivity(new Intent(WarehouseActivity.this, BaseActivity.class));
-                    finish();
-                } else {
-                    finish();
-                }
+                // 直接调用finish()返回上一个页面，不需要重新启动BaseActivity
+                finish();
             }
         });
     }

@@ -53,13 +53,10 @@ public class TradingActivity extends BaseActivity {
         tvCurrentGold = findViewById(R.id.tv_current_gold);
         ImageButton btnBack = findViewById(R.id.btn_back);
         btnBack.setOnClickListener(v -> {
-            // 检查是否从基地进入，如果是则返回基地
-            if (isFromBase()) {
-                startActivity(new Intent(TradingActivity.this, BaseActivity.class));
-                finish();
-            } else {
-                finish();
-            }
+            // 记录返回跳转日志
+            android.util.Log.d("NavigationLog", "从 TradingActivity 返回到上一个页面");
+            // 直接调用finish()返回上一个活动
+            finish();
         });
 
         // 更新金币显示

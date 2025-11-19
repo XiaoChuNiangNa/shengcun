@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="12dp"
-    android:background="@color/accent"
+    android:background="@color/white"
     android:layout_marginBottom="8dp">
 
     <!-- 科技名称 -->

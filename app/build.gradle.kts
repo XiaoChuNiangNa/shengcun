@@ -4,12 +4,13 @@ plugins {
 
 android {
     namespace = "com.example.myapplication3"
-    compileSdk = 36
+    compileSdk = 34
+    
 
     defaultConfig {
         applicationId = "com.example.myapplication3"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -26,8 +27,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     
     // 自定义APK文件名
@@ -43,10 +44,17 @@ android {
 }
 
 dependencies {
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.activity:activity:1.7.2")
+            // 排除导致DEX错误的error_prone_annotations依赖
+            exclude(group = "com.google.errorprone", module = "error_prone_annotations")
+        }
+    }
 
     implementation(libs.appcompat)
     implementation(libs.material)
-    implementation(libs.activity)
+    implementation("androidx.activity:activity:1.7.2")
     implementation(libs.constraintlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

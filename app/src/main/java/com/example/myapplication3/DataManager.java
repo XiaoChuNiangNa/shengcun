@@ -97,9 +97,14 @@ public class DataManager {
                 gameStateManager.resetGame();
                 Log.i("DataManager", "游戏状态管理器已重置");
             } else {
-                // 新玩家或者生命值正常，直接设置生命值
-                activity.life = lifeFromDB;
-                Log.i("DataManager", "设置生命值: " + activity.life);
+                // 新玩家或者生命值正常，设置生命值并考虑等级加成
+                LevelExperienceManager levelManager = LevelExperienceManager.getInstance(activity);
+                int lifeBonus = levelManager.getTotalHpBonus();
+                int maxLife = 100 + lifeBonus; // 基础100 + 等级加成
+                
+                // 确保当前生命值不超过新的最大值
+                activity.life = Math.min(lifeFromDB, maxLife);
+                Log.i("DataManager", "设置生命值: " + activity.life + " (最大值: " + maxLife + ", 加成: " + lifeBonus + ")");
                 
                 // 检查设置后的状态
                 Log.d("DataManager", "设置后活动中的生命值: " + activity.life);
@@ -407,7 +412,10 @@ public class DataManager {
             
             // 4. 重置用户状态为默认值（但不删除建筑和地形数据）
             Map<String, Object> defaultStatus = new HashMap<>();
-            defaultStatus.put("life", Constant.INIT_LIFE);
+            LevelExperienceManager levelManager = LevelExperienceManager.getInstance(activity);
+            int lifeBonus = levelManager.getTotalHpBonus();
+            int initLifeWithBonus = Constant.INIT_LIFE + lifeBonus;
+            defaultStatus.put("life", initLifeWithBonus);
             defaultStatus.put("hunger", Constant.INIT_HUNGER);
             defaultStatus.put("thirst", Constant.INIT_THIRST);
             defaultStatus.put("stamina", Constant.INIT_STAMINA);
@@ -460,9 +468,12 @@ public class DataManager {
                 dbHelper.initializeUserData(userId);
             }
             
-            // 2. 初始化用户状态为默认值
+            // 2. 初始化用户状态为默认值（考虑等级加成）
             Map<String, Object> defaultStatus = new HashMap<>();
-            defaultStatus.put("life", Constant.INIT_LIFE);
+            LevelExperienceManager levelManager = LevelExperienceManager.getInstance(activity);
+            int lifeBonus = levelManager.getTotalHpBonus();
+            int initLifeWithBonus = Constant.INIT_LIFE + lifeBonus;
+            defaultStatus.put("life", initLifeWithBonus);
             defaultStatus.put("hunger", Constant.INIT_HUNGER);
             defaultStatus.put("thirst", Constant.INIT_THIRST);
             defaultStatus.put("stamina", Constant.INIT_STAMINA);

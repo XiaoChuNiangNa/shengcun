@@ -32,13 +32,10 @@ public class SynthesisActivity extends BaseActivity {
         LinearLayout container = findViewById(R.id.container);
         ImageButton btnBack = findViewById(R.id.btn_back);
         btnBack.setOnClickListener(v -> {
-            // 检查是否从基地进入，如果是则返回基地
-            if (isFromBase()) {
-                startActivity(new Intent(SynthesisActivity.this, BaseActivity.class));
-                finish();
-            } else {
-                finish();
-            }
+            // 记录返回跳转日志
+            android.util.Log.d("NavigationLog", "从 SynthesisActivity 返回到上一个页面");
+            // 直接调用finish()返回上一个活动
+            finish();
         });
 
         // 从配方管理类获取所有合成配方并添加到界面

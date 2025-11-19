@@ -17,26 +17,69 @@ public class SkillFactory {
     
     /**
      * 根据技能配置创建技能数组
+     * 确保召唤技能放在固定位置(SUMMON_SKILL_INDEX = 3)
      */
     public static BattleSkill[] createSkillsFromConfig(
             BattleSkillManager.SkillType[] skillTypes, 
             int[] skillLevels) {
         
-        if (skillTypes == null || skillLevels == null || 
-            skillTypes.length != skillLevels.length) {
+        if (skillTypes == null || skillLevels == null) {
             return new BattleSkill[0];
         }
         
-        List<BattleSkill> skillList = new ArrayList<>();
+        // 创建技能数组，确保长度至少为4以容纳召唤技能在索引3位置
+        // 但最多不超过技能类型数组长度+1
+        int maxLength = Math.max(skillTypes.length + 1, 4);
+        BattleSkill[] skills = new BattleSkill[maxLength];
         
-        for (int i = 0; i < skillTypes.length; i++) {
-            BattleSkill skill = BattleSkillManager.createSkill(skillTypes[i], skillLevels[i]);
-            if (skill != null) {
-                skillList.add(skill);
+        // 查找并处理召唤技能
+        BattleSkill summonSkill = null;
+        int summonLevel = 1;
+        int nonSummonSkillCount = 0;
+        
+        for (int i = 0; i < skillTypes.length && i < skillLevels.length; i++) {
+            BattleSkillManager.SkillType skillType = skillTypes[i];
+            int skillLevel = skillLevels[i];
+            
+            // 如果是召唤技能，暂时保存
+            if (skillType == BattleSkillManager.SkillType.SUMMON) {
+                summonSkill = BattleSkillManager.createSkill(skillType, skillLevel);
+                summonLevel = skillLevel;
+                // 确保将召唤技能放在固定位置（索引3）
+                skills[3] = summonSkill;
+            } else {
+                // 为非召唤技能创建并放置
+                BattleSkill skill = BattleSkillManager.createSkill(skillType, skillLevel);
+                if (skill != null) {
+                    // 为非召唤技能找到合适的位置
+                    if (nonSummonSkillCount < 3) {
+                        // 前三个非召唤技能放在索引0、1、2
+                        skills[nonSummonSkillCount] = skill;
+                    } else {
+                        // 后续非召唤技能从索引4开始放置
+                        skills[4 + (nonSummonSkillCount - 3)] = skill;
+                    }
+                    nonSummonSkillCount++;
+                }
             }
         }
         
-        return skillList.toArray(new BattleSkill[0]);
+        // 检查是否有至少一个有效技能
+        boolean hasValidSkills = false;
+        for (BattleSkill skill : skills) {
+            if (skill != null) {
+                hasValidSkills = true;
+                break;
+            }
+        }
+        
+        // 如果没有有效技能，返回空数组
+        if (!hasValidSkills) {
+            return new BattleSkill[0];
+        }
+        
+        // 保持数组结构不变，直接返回
+        return skills;
     }
     
     /**

@@ -5,13 +5,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/accent">
+    android:background="#F5F5F5">
 
     <!-- 顶部导航栏：修复标题文字显示 -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/accent">
+        android:background="#1E299B">
 
         <ImageButton
             android:id="@+id/btn_back"
@@ -61,7 +61,7 @@
         android:id="@+id/tab_layout"
         android:layout_width="match_parent"
         android:layout_height="52dp"
-        android:background="@color/accent"
+        android:background="#F5F5F5"
         android:elevation="2dp"
         app:tabIndicatorColor="@color/accent"
         app:tabIndicatorHeight="3dp"

@@ -55,13 +55,10 @@ public class BuildingActivity extends BaseActivity {
         LinearLayout container = findViewById(R.id.container);
         ImageButton btnBack = findViewById(R.id.btn_back);
         btnBack.setOnClickListener(v -> {
-            // 检查是否从基地进入，如果是则返回基地
-            if (isFromBase()) {
-                startActivity(new Intent(BuildingActivity.this, BaseActivity.class));
-                finish();
-            } else {
-                finish();
-            }
+            // 记录返回跳转日志
+            android.util.Log.d("NavigationLog", "从 BuildingActivity 返回到上一个页面");
+            // 直接调用finish()返回上一个活动
+            finish();
         });
 
         initBuildingList(container);

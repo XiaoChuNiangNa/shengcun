@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="8dp"
-    android:background="@color/yellow">
+    android:background="@color/white">
 
     <TextView
         android:id="@+id/tv_name"
@@ -25,5 +25,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="合成"
+        android:backgroundTint="#1E299B"
         android:layout_marginTop="8dp"/>
 </LinearLayout>
