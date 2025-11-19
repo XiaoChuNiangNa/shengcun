@@ -188,7 +188,8 @@ public class BuildingActivity extends BaseActivity {
             case Constant.BUILDING_FURNACE:
                 return BuildingRequirements.createFurnaceReq(); // 调用新类方法
             case Constant.BUILDING_STORAGE:
-                return BuildingRequirements.createStorageReq(); // 调用新类方法
+                int currentWarehouseCount = dbHelper.getBuildingCount(userId, Constant.BUILDING_STORAGE);
+                return BuildingRequirements.createStorageReq(currentWarehouseCount); // 传入当前仓库数量
             case Constant.BUILDING_THATCH_HOUSE:
                 return BuildingRequirements.createThatchHouseReq(); // 调用新类方法
             case Constant.BUILDING_PORTAL:
@@ -253,7 +254,9 @@ public class BuildingActivity extends BaseActivity {
             String terrainName = getTerrainDisplayName(currentTerrain);
             
             // 根据建筑分类显示不同的错误提示
-            if (isIndoorBuilding(type)) {
+            if (isWarehouse(type)) {
+                Toast.makeText(this, buildingName + "建造数量已达到上限（最多10个）", Toast.LENGTH_LONG).show();
+            } else if (isIndoorBuilding(type)) {
                 Toast.makeText(this, buildingName + "是室内建筑，只能建造在庇护所地形内（茅草屋、小木屋、小石屋、砖瓦屋）", Toast.LENGTH_LONG).show();
             } else if (isOutdoorBuilding(type)) {
                 Toast.makeText(this, buildingName + "是野外建筑，只能建造在非庇护所地形", Toast.LENGTH_LONG).show();
@@ -384,8 +387,33 @@ public class BuildingActivity extends BaseActivity {
                 if (success) {
                     Log.i("BuildingLog", "=== 建筑建造成功 ===");
                     
-                    // 若为庇护所类型建筑或传送门，更新地形
-                    if (isShelterBuilding(type) || type.equals(Constant.BUILDING_PORTAL)) {
+                    // 仓库特殊处理：不改变地形，只增加背包容量（永久）
+                    if (isWarehouse(type)) {
+                        Log.i("BuildingLog", "开始处理仓库特殊效果...");
+                        
+                        // 增加背包容量（永久）
+                        int currentBackpackCap = dbHelper.getBackpackCapacity(userId);
+                        int newBackpackCap = Math.min(150, currentBackpackCap + 10); // 最大150
+                        dbHelper.updateBackpackCapacity(userId, newBackpackCap);
+                        
+                        Log.i("BuildingLog", "背包容量更新: " + currentBackpackCap + " -> " + newBackpackCap);
+                        
+                        // 显示成功消息
+                        Toast.makeText(BuildingActivity.this,
+                                "仓库建造成功，背包容量+10（当前: " + newBackpackCap + "/150）",
+                                Toast.LENGTH_LONG).show();
+                        
+                        // 更新建筑计数显示
+                        if (tvCount != null) {
+                            int currentCount = dbHelper.getBuildingCount(userId, type);
+                            tvCount.setText("已建造：" + currentCount);
+                        }
+                        
+                        // 重新加载显示
+                        loadBuildingCounts();
+                        backgroundView.invalidate();
+                        
+                    } else if (isShelterBuilding(type) || type.equals(Constant.BUILDING_PORTAL)) {
                         String buildingName = getBuildingName(type);
                         String newTerrainType = buildingName;
                         
@@ -617,8 +645,12 @@ public class BuildingActivity extends BaseActivity {
     // 判断建筑是否为室内建筑
     private boolean isIndoorBuilding(String buildingType) {
         return buildingType.equals(Constant.BUILDING_FIRE) || 
-               buildingType.equals(Constant.BUILDING_FURNACE) || 
-               buildingType.equals(Constant.BUILDING_STORAGE);
+               buildingType.equals(Constant.BUILDING_FURNACE);
+    }
+    
+    // 判断是否为仓库（特殊建筑类型）
+    private boolean isWarehouse(String buildingType) {
+        return buildingType.equals(Constant.BUILDING_STORAGE);
     }
 
     // 判断建筑是否为野外建筑
@@ -644,7 +676,12 @@ public class BuildingActivity extends BaseActivity {
             return false;
         }
         
-        // 室内建筑（仓库、熔炉、篝火）只能建造在庇护所地形内
+        // 仓库特殊处理：可以在任何地形建造（除了禁止地形）
+        if (isWarehouse(buildingType)) {
+            return true;
+        }
+        
+        // 室内建筑（熔炉、篝火）只能建造在庇护所地形内
         if (isIndoorBuilding(buildingType)) {
             return isShelterTerrain(terrainType);
         }
@@ -660,6 +697,16 @@ public class BuildingActivity extends BaseActivity {
 
     // 检查是否允许在当前位置建造（根据建筑分类：野外建筑每个地形只能一个，室内建筑庇护所内每种类型可建造一个）
     private boolean canBuildAtCurrentPosition(String buildingType) {
+        // 仓库特殊处理：可以建造在任何地形，且有单独的数量限制
+        if (isWarehouse(buildingType)) {
+            // 检查仓库建造数量限制
+            int currentWarehouseCount = dbHelper.getBuildingCount(userId, Constant.BUILDING_STORAGE);
+            if (currentWarehouseCount >= 10) {
+                return false; // 已达到最大仓库数量限制
+            }
+            return true; // 允许建造（不检查现有建筑）
+        }
+        
         // 检查当前位置是否有建筑
         boolean hasAnyBuilding = dbHelper.hasAnyBuildingAt(userId, currentX, currentY);
         
@@ -678,7 +725,7 @@ public class BuildingActivity extends BaseActivity {
             return false;
         }
         
-        // 2. 如果是室内建筑（篝火、熔炉、仓库），每个庇护所内每种类型可以建造一个
+        // 2. 如果是室内建筑（篝火、熔炉），每个庇护所内每种类型可以建造一个
         if (isIndoorBuilding(buildingType)) {
             // 检查当前位置是否为庇护所地形
             if (isShelterTerrain(currentTerrain)) {

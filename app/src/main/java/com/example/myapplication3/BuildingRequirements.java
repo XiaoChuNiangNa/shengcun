@@ -26,12 +26,25 @@ public class BuildingRequirements {
         return req;
     }
 
-    public static Map<String, Integer> createStorageReq() {
+    public static Map<String, Integer> createStorageReq(int currentWarehouseCount) {
+        // 基础成本
+        int baseWood = 5;
+        int baseStone = 5;
+        int baseWeed = 5;
+        
+        // 每建造一个仓库，成本增加50%（第N个仓库成本 = 基础成本 * (1 + (N-1) * 0.5)）
+        double costMultiplier = 1.0 + currentWarehouseCount * 0.5;
+        
         Map<String, Integer> req = new HashMap<>();
-        req.put(ItemConstants.ITEM_WOOD, 5);
-        req.put(ItemConstants.ITEM_STONE, 5);
-        req.put(ItemConstants.ITEM_WEED, 5);
+        req.put(ItemConstants.ITEM_WOOD, (int) Math.ceil(baseWood * costMultiplier));
+        req.put(ItemConstants.ITEM_STONE, (int) Math.ceil(baseStone * costMultiplier));
+        req.put(ItemConstants.ITEM_WEED, (int) Math.ceil(baseWeed * costMultiplier));
         return req;
+    }
+    
+    // 兼容旧方法（默认为第0个仓库）
+    public static Map<String, Integer> createStorageReq() {
+        return createStorageReq(0);
     }
 
     public static Map<String, Integer> createThatchHouseReq() {

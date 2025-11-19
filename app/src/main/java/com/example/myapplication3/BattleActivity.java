@@ -1001,16 +1001,122 @@ public class BattleActivity extends AppCompatActivity {
         }
         
         try {
-            // 简化实现，实际项目中需要完整的UI
+            // 准备奖励信息，包括金币、经验和资源掉落
+            StringBuilder rewardText = new StringBuilder();
+            rewardText.append("战斗胜利！\n\n");
+            
+            // 添加金币和经验
+            rewardText.append("✓ 获得 金币 x").append(playerGold).append("\n");
+            rewardText.append("✓ 获得 经验 +").append(playerExp).append("\n\n");
+            
+            // 根据敌人类型添加对应的资源奖励
+            String enemyName = enemyUnits[1] != null ? enemyUnits[1].getName() : "未知敌人";
+            rewardText.append("战利品：\n");
+            
+            // 模拟资源掉落，基于敌人类型（类似于WildBattleResultDialogFragment的逻辑）
+            Random random = new Random();
+            switch (enemyName) {
+                case "野兔":
+                case "野鸡":
+                case "小猪":
+                case "蛇":
+                    rewardText.append("✓ 获得 肉 x").append(1 + random.nextInt(3)).append("\n");
+                    rewardText.append("✓ 获得 皮革 x").append(1 + random.nextInt(2)).append("\n");
+                    break;
+                case "山羊":
+                    rewardText.append("✓ 获得 肉 x").append(1 + random.nextInt(3)).append("\n");
+                    rewardText.append("✓ 获得 皮革 x").append(1 + random.nextInt(2)).append("\n");
+                    rewardText.append("✓ 获得 羊毛 x").append(1 + random.nextInt(2)).append("\n");
+                    break;
+                case "食人鱼":
+                    rewardText.append("✓ 获得 鱼 x").append(1 + random.nextInt(3)).append("\n");
+                    break;
+                case "狼":
+                case "鹿":
+                case "野猪":
+                case "猴子":
+                    rewardText.append("✓ 获得 肉 x").append(2 + random.nextInt(3)).append("\n");
+                    rewardText.append("✓ 获得 皮革 x").append(1 + random.nextInt(4)).append("\n");
+                    rewardText.append("✓ 获得 兽骨 x").append(1 + random.nextInt(2)).append("\n");
+                    break;
+                case "老虎":
+                case "狮子":
+                case "熊":
+                case "猎豹":
+                case "鲨鱼":
+                    rewardText.append("✓ 获得 肉 x").append(3 + random.nextInt(3)).append("\n");
+                    rewardText.append("✓ 获得 皮革 x").append(2 + random.nextInt(4)).append("\n");
+                    rewardText.append("✓ 获得 兽骨 x").append(1 + random.nextInt(4)).append("\n");
+                    break;
+                default:
+                    rewardText.append("✓ 获得 肉 x").append(2 + random.nextInt(3)).append("\n");
+                    rewardText.append("✓ 获得 皮革 x1\n");
+            }
+            
+            // 显示对话框
             new android.app.AlertDialog.Builder(this)
                 .setTitle("战斗胜利")
-                .setMessage(String.format("获得 %d 金币和 %d 经验", playerGold, playerExp))
-                .setPositiveButton("确定", (dialog, which) -> finish())
+                .setMessage(rewardText.toString())
+                .setPositiveButton("确定", (dialog, which) -> {
+                    // 将战斗胜利获得的物资添加到背包
+                    addBattleRewardsToBackpack(enemyName);
+                    finish();
+                })
                 .show();
         } catch (Exception e) {
             // 如果显示对话框失败，直接结束Activity
             finish();
         }
+    }
+    
+    /**
+     * 将战斗胜利获得的物资添加到背包
+     */
+    private void addBattleRewardsToBackpack(String enemyName) {
+        DBHelper dbHelper = DBHelper.getInstance(this);
+        Random random = new Random();
+        
+        // 根据敌人类型添加不同数量的物资到背包
+        switch (enemyName) {
+            case "野兔":
+            case "野鸡":
+            case "小猪":
+            case "蛇":
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_MEAT, 1 + random.nextInt(3));
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_LEATHER, 1 + random.nextInt(2));
+                break;
+            case "山羊":
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_MEAT, 1 + random.nextInt(3));
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_LEATHER, 1 + random.nextInt(2));
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_WOOL, 1 + random.nextInt(2));
+                break;
+            case "食人鱼":
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_FISH, 1 + random.nextInt(3));
+                break;
+            case "狼":
+            case "鹿":
+            case "野猪":
+            case "猴子":
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_MEAT, 2 + random.nextInt(3));
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_LEATHER, 1 + random.nextInt(4));
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_BONE, 1 + random.nextInt(2));
+                break;
+            case "老虎":
+            case "狮子":
+            case "熊":
+            case "猎豹":
+            case "鲨鱼":
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_MEAT, 3 + random.nextInt(3));
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_LEATHER, 2 + random.nextInt(4));
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_BONE, 1 + random.nextInt(4));
+                break;
+            default:
+                // 默认掉落肉和皮
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_MEAT, 2 + random.nextInt(3));
+                dbHelper.updateBackpackItem(MyApplication.currentUserId, ItemConstants.ITEM_LEATHER, 1);
+        }
+        
+        Log.d("BattleRewards", "战斗胜利奖励已添加到背包：" + enemyName);
     }
 
     /**
