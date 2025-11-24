@@ -115,7 +115,28 @@ public class DataManager {
             activity.stamina = getIntValue(userStatus.get("stamina"), Constant.INIT_STAMINA);
             activity.gold = getIntValue(userStatus.get("gold"), 0);
             activity.backpackCap = getIntValue(userStatus.get("backpack_cap"), 10);
-            activity.difficulty = (String) userStatus.getOrDefault("difficulty", "normal");
+            // 关键修复：优先从SharedPreferences读取用户最新选择的难度
+            android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
+            String difficultyFromPrefs = sp.getString("difficulty", null);
+            
+            if (difficultyFromPrefs != null && !difficultyFromPrefs.isEmpty()) {
+                // 如果SharedPreferences中有难度设置，使用该设置并同步到数据库
+                activity.difficulty = difficultyFromPrefs;
+                Log.d("GameLoading", "从SharedPreferences读取难度: " + difficultyFromPrefs);
+                
+                // 同步更新数据库中的难度，确保一致性
+                Map<String, Object> difficultyUpdate = new HashMap<>();
+                difficultyUpdate.put("difficulty", difficultyFromPrefs);
+                dbHelper.updateUserStatus(MyApplication.currentUserId, difficultyUpdate);
+                Log.d("GameLoading", "已同步数据库难度为: " + difficultyFromPrefs);
+            } else {
+                // 如果SharedPreferences中没有设置，才从数据库加载
+                activity.difficulty = (String) userStatus.getOrDefault("difficulty", Constant.DIFFICULTY_NORMAL);
+                Log.d("GameLoading", "从数据库加载的难度: " + activity.difficulty);
+            }
+            
+            // 添加日志显示当前游戏难度
+            Log.d("GameLoading", "当前游戏难度: " + activity.difficulty);
             activity.firstCollectTime = getLongValue(userStatus.get("first_collect_time"), 0);
 
             // 加载时间和温度
@@ -167,16 +188,14 @@ public class DataManager {
             
             // 从SharedPreferences读取正确的难度设置
             android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
-            String difficultyFromPrefs = sp.getString("difficulty", "简单");
+            String difficultyFromPrefs = sp.getString("difficulty", Constant.DIFFICULTY_NORMAL);
             
-            // 将中文难度转换为数据库存储格式
-            if ("简单".equals(difficultyFromPrefs)) {
-                activity.difficulty = Constant.DIFFICULTY_EASY;
-            } else if ("困难".equals(difficultyFromPrefs)) {
-                activity.difficulty = Constant.DIFFICULTY_HARD;
-            } else {
-                activity.difficulty = Constant.DIFFICULTY_NORMAL; // 默认使用普通模式
-            }
+            // 添加日志用于调试难度设置
+            Log.d("GameLoading", "从SharedPreferences读取的难度: " + difficultyFromPrefs);
+            
+            // 直接使用从SharedPreferences读取的值，确保与TitleActivity中保存的值一致
+            activity.difficulty = difficultyFromPrefs;
+            Log.d("GameLoading", "初始化后设置的难度: " + activity.difficulty);
             
             activity.firstCollectTime = 0;
             activity.currentEquip = "";
@@ -256,16 +275,14 @@ public class DataManager {
         
         // 从SharedPreferences读取正确的难度设置
         android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
-        String difficultyFromPrefs = sp.getString("difficulty", "简单");
+        String difficultyFromPrefs = sp.getString("difficulty", Constant.DIFFICULTY_NORMAL);
         
-        // 将中文难度转换为数据库存储格式
-        if ("简单".equals(difficultyFromPrefs)) {
-            activity.difficulty = Constant.DIFFICULTY_EASY;
-        } else if ("困难".equals(difficultyFromPrefs)) {
-            activity.difficulty = Constant.DIFFICULTY_HARD;
-        } else {
-            activity.difficulty = Constant.DIFFICULTY_NORMAL; // 默认使用普通模式
-        }
+        // 添加日志用于调试难度设置
+        Log.d("GameLoading", "从SharedPreferences读取的难度: " + difficultyFromPrefs);
+        
+        // 直接使用从SharedPreferences读取的值，确保与TitleActivity中保存的值一致
+        activity.difficulty = difficultyFromPrefs;
+        Log.d("GameLoading", "初始化后设置的难度: " + activity.difficulty);
         
         activity.firstCollectTime = 0;
         activity.currentEquip = "";
@@ -351,6 +368,10 @@ public class DataManager {
         updateData.put("game_hour", activity.gameHour);
         updateData.put("game_day", activity.gameDay);
         updateData.put("temperature", activity.temperature);
+        updateData.put("difficulty", activity.difficulty);
+        
+        // 添加日志记录保存的难度值
+        Log.d("GameSaving", "保存的难度常量: " + activity.difficulty);
 
         new Thread(() -> dbHelper.updateUserStatus(MyApplication.currentUserId, updateData)).start();
     }
@@ -401,50 +422,21 @@ public class DataManager {
      */
     public void resetGameData(int userId) {
         try {
-            // 1. 清空背包（不移除建筑）
-            dbHelper.clearBackpack(userId);
+            // 从SharedPreferences读取难度设置
+            android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
+            String difficultyFromPrefs = sp.getString("difficulty", Constant.DIFFICULTY_NORMAL);
             
-            // 2. 清空装备
-            dbHelper.deleteAllEquipments(userId);
+            // 调用接受难度参数的resetUserData方法
+            dbHelper.resetUserData(userId, difficultyFromPrefs);
             
-            // 3. 清空资源冷却记录
-            dbHelper.deleteAllResourceCDs(userId);
-            
-            // 4. 重置用户状态为默认值（但不删除建筑和地形数据）
-            Map<String, Object> defaultStatus = new HashMap<>();
-            LevelExperienceManager levelManager = LevelExperienceManager.getInstance(activity);
-            int lifeBonus = levelManager.getTotalHpBonus();
-            int initLifeWithBonus = Constant.INIT_LIFE + lifeBonus;
-            defaultStatus.put("life", initLifeWithBonus);
-            defaultStatus.put("hunger", Constant.INIT_HUNGER);
-            defaultStatus.put("thirst", Constant.INIT_THIRST);
-            defaultStatus.put("stamina", Constant.INIT_STAMINA);
-            defaultStatus.put("gold", 0);
-            defaultStatus.put("backpack_cap", 10);
-            defaultStatus.put("difficulty", "normal");
-            defaultStatus.put("first_collect_time", 0);
-            defaultStatus.put("game_hour", Constant.GAME_HOUR_DEFAULT);
-            defaultStatus.put("game_day", Constant.GAME_DAY_DEFAULT);
-            defaultStatus.put("temperature", Constant.TEMPERATURE_DEFAULT);
-            
-            // 5. 重置操作次数记录，确保可以重新开始游戏
-            defaultStatus.put("global_collect_times", 0);
-            defaultStatus.put("exploration_times", 0);
-            defaultStatus.put("synthesis_times", 0);
-            defaultStatus.put("last_refresh_day", 0);
-            
-            // 设置默认出生点
-            int[] spawnPoint = activity.gameMap.chooseRandomSpawnPoint();
-            defaultStatus.put("current_x", spawnPoint[0]);
-            defaultStatus.put("current_y", spawnPoint[1]);
-            
-            dbHelper.updateUserStatus(userId, defaultStatus);
-            
-            // 6. 更新当前活动中的状态变量，确保立即生效
+            // 更新当前活动中的状态变量，确保立即生效
             activity.life = Constant.INIT_LIFE;
             activity.hunger = Constant.INIT_HUNGER;
             activity.thirst = Constant.INIT_THIRST;
             activity.stamina = Constant.INIT_STAMINA;
+            
+            // 设置默认出生点
+            int[] spawnPoint = activity.gameMap.chooseRandomSpawnPoint();
             activity.currentX = spawnPoint[0];
             activity.currentY = spawnPoint[1];
             activity.gameHour = Constant.GAME_HOUR_DEFAULT;
@@ -452,7 +444,7 @@ public class DataManager {
             activity.currentCollectTimes = 0;
             activity.lastRefreshDay = 0;
             
-            Log.i("DataManager", "游戏数据重置成功（保留建筑）");
+            Log.i("DataManager", "游戏数据重置成功（保留建筑），难度: " + difficultyFromPrefs);
         } catch (Exception e) {
             Log.e("DataManager", "重置游戏数据失败", e);
         }
@@ -464,9 +456,23 @@ public class DataManager {
     public void initializeNewUserData(int userId) {
         try {
             // 1. 确保用户数据存在，如果不存在则创建
-            if (!dbHelper.hasUserData(userId)) {
-                dbHelper.initializeUserData(userId);
-            }
+            // 从SharedPreferences读取难度设置
+              android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
+              String difficultyFromPrefs = sp.getString("difficulty", Constant.DIFFICULTY_NORMAL);
+              
+              Log.d("DataManager", "初始化新用户数据，从SharedPreferences读取的难度: " + difficultyFromPrefs + ", 用户ID: " + userId);
+              
+              if (!dbHelper.hasUserData(userId)) {
+                 // 调用接受难度参数的initUserData方法，确保使用用户选择的难度
+                 dbHelper.initUserData(userId, difficultyFromPrefs);
+                 Log.d("DataManager", "调用initUserData方法，使用难度: " + difficultyFromPrefs);
+              } else {
+                 // 如果用户数据已存在，更新难度设置以确保与SharedPreferences一致
+                 Map<String, Object> difficultyUpdate = new HashMap<>();
+                 difficultyUpdate.put("difficulty", difficultyFromPrefs);
+                 dbHelper.updateUserStatus(userId, difficultyUpdate);
+                 Log.d("DataManager", "用户数据已存在，更新难度为: " + difficultyFromPrefs);
+              }
             
             // 2. 初始化用户状态为默认值（考虑等级加成）
             Map<String, Object> defaultStatus = new HashMap<>();
@@ -479,7 +485,9 @@ public class DataManager {
             defaultStatus.put("stamina", Constant.INIT_STAMINA);
             defaultStatus.put("gold", 0);
             defaultStatus.put("backpack_cap", 10);
-            defaultStatus.put("difficulty", "normal");
+            // 使用从SharedPreferences读取的难度设置
+            Log.d("GameInit", "初始化新用户数据，从SharedPreferences读取的难度: " + difficultyFromPrefs + ", 用户ID: " + userId);
+            defaultStatus.put("difficulty", difficultyFromPrefs);
             defaultStatus.put("first_collect_time", 0);
             defaultStatus.put("game_hour", Constant.GAME_HOUR_DEFAULT);
             defaultStatus.put("game_day", Constant.GAME_DAY_DEFAULT);
@@ -510,7 +518,7 @@ public class DataManager {
             activity.currentCollectTimes = 0;
             activity.lastRefreshDay = 0;
             
-            Log.i("DataManager", "新用户数据初始化成功");
+            Log.i("DataManager", "新用户数据初始化成功，难度: " + difficultyFromPrefs);
         } catch (Exception e) {
             Log.e("DataManager", "新用户数据初始化失败", e);
         }

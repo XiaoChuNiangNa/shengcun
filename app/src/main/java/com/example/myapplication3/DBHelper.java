@@ -624,6 +624,17 @@ public class DBHelper extends SQLiteOpenHelper {
                 Log.e("DBHelper", "添加position列失败: " + e.getMessage());
             }
         }
+        
+        if (oldVersion < 31) {
+            // 版本31升级逻辑：为user_status表添加difficulty字段
+            try {
+                db.execSQL("ALTER TABLE user_status ADD COLUMN difficulty TEXT NOT NULL DEFAULT 'normal'");
+                Log.d("DBHelper", "成功添加difficulty字段到user_status表");
+            } catch (Exception e) {
+                // 如果列已经存在，忽略错误
+                Log.d("DBHelper", "difficulty列已存在，跳过添加");
+            }
+        }
 
     }
 
@@ -883,7 +894,77 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
-    // 初始化用户数据
+    // 初始化用户数据（接受难度参数的重载版本）
+    public void initUserData(int userId, String difficulty) {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            Random random = new Random();
+            int initX = random.nextInt(Constant.MAP_MAX) + 1;
+            int initY = random.nextInt(Constant.MAP_MAX) + 1;
+
+            ContentValues userStatus = new ContentValues();
+            userStatus.put("user_id", userId);
+            userStatus.put("life", Constant.INIT_LIFE);
+            userStatus.put("hunger", Constant.INIT_HUNGER);
+            userStatus.put("thirst", Constant.INIT_THIRST);
+            userStatus.put("stamina", Constant.INIT_STAMINA);
+            userStatus.put("current_x", initX);
+            userStatus.put("current_y", initY);
+            userStatus.put("backpack_cap", Constant.BACKPACK_INIT_CAP);
+            userStatus.put("gold", 0);
+            userStatus.put("sound_status", 1);
+            userStatus.put("difficulty", difficulty);
+            
+            Log.d("DBHelper", "初始化用户数据: 使用指定难度=" + difficulty + ", 用户ID=" + userId);
+            
+            userStatus.put("first_collect_time", 0);
+            db.insert("user_status", null, userStatus);
+            
+//            // 初始装备：石斧（存入背包，工具类）
+//            ContentValues backpack = new ContentValues();
+//            backpack.put("user_id", userId);
+//            backpack.put("item_type", ItemConstants.EQUIP_STONE_AXE);
+//            backpack.put("item_count", 1); // 数量1
+//            backpack.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_AXE)); // 假设10
+//            db.insert("backpack", null, backpack);
+//
+//            // 初始装备：石镐（存入背包，工具类）
+//            backpack.clear();
+//            backpack.put("user_id", userId);
+//            backpack.put("item_type", ItemConstants.EQUIP_STONE_PICKAXE);
+//            backpack.put("item_count", 1); // 数量1
+//            backpack.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_PICKAXE)); // 假设10
+//            db.insert("backpack", null, backpack);
+//
+//            // 初始装备：石铲（存入背包，工具类）
+//            backpack.clear();
+//            backpack.put("user_id", userId);
+//            backpack.put("item_type", ItemConstants.EQUIP_STONE_SHOVEL);
+//            backpack.put("item_count", 1); // 数量1
+//            backpack.put("durability", getToolInitialDurability(ItemConstants.EQUIP_STONE_SHOVEL)); // 假设10
+//            db.insert("backpack", null, backpack);
+//
+//            // 初始食物（放入背包）
+//            backpack.clear();
+//            backpack.put("user_id", userId);
+//            backpack.put("item_type", ItemConstants.FOOD_BERRIES);
+//            backpack.put("item_count", 3); // 数量3
+//            db.insert("backpack", null, backpack);
+//
+//            // 初始水（放入背包）
+//            backpack.clear();
+//            backpack.put("user_id", userId);
+//            backpack.put("item_type", ItemConstants.WATER_WATER);
+//            backpack.put("item_count", 2); // 数量2
+//            db.insert("backpack", null, backpack);
+            
+            Log.d("DBHelper", "初始化用户数据完成，用户ID: " + userId + ", 难度: " + difficulty);
+        } catch (Exception e) {
+            Log.e("DBHelper", "初始化用户数据失败", e);
+        }
+    }
+    
+    // 初始化用户数据（不接受难度参数的版本）
     public void initUserData(int userId) {
         SQLiteDatabase db = getWritableDatabase();
         try {
@@ -903,17 +984,39 @@ public class DBHelper extends SQLiteOpenHelper {
             userStatus.put("gold", 0);
             userStatus.put("sound_status", 1);
             
-            // 检测是否是第一次玩：检查是否有已完成的任务
-            boolean isFirstTimePlaying = getCompletedQuests(userId).isEmpty();
-            if (isFirstTimePlaying) {
-                // 第一次玩使用简单难度
-                userStatus.put("difficulty", Constant.DIFFICULTY_EASY);
-                Log.d("DBHelper", "初始化用户数据: 第一次玩，设置难度为简单");
-            } else {
-                // 老玩家使用普通难度
-                userStatus.put("difficulty", Constant.DIFFICULTY_NORMAL);
-                Log.d("DBHelper", "初始化用户数据: 老玩家，设置难度为普通");
+            // 关键修复：优先从SharedPreferences读取用户选择的难度
+            String difficulty = Constant.DIFFICULTY_NORMAL; // 默认值
+            try {
+                // 获取SharedPreferences需要Context，通过MyApplication获取
+                android.content.Context context = MyApplication.getAppContext();
+                if (context != null) {
+                    android.content.SharedPreferences sp = context.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
+                    difficulty = sp.getString("difficulty", Constant.DIFFICULTY_NORMAL);
+                    Log.d("DBHelper", "从SharedPreferences读取难度: " + difficulty);
+                } else {
+                    Log.w("DBHelper", "无法获取应用上下文，使用默认难度");
+                }
+            } catch (Exception e) {
+                Log.e("DBHelper", "读取SharedPreferences难度失败: " + e.getMessage() + ", 使用默认难度");
             }
+            
+            // 只有在SharedPreferences中没有难度设置时，才使用自动判断逻辑
+            if (difficulty == null || difficulty.isEmpty() || "默认值".equals(difficulty)) {
+                // 检测是否是第一次玩：检查是否有已完成的任务
+                boolean isFirstTimePlaying = getCompletedQuests(userId).isEmpty();
+                if (isFirstTimePlaying) {
+                    // 第一次玩使用简单难度
+                    difficulty = Constant.DIFFICULTY_EASY;
+                    Log.d("DBHelper", "初始化用户数据: 第一次玩，设置难度为简单");
+                } else {
+                    // 老玩家使用普通难度
+                    difficulty = Constant.DIFFICULTY_NORMAL;
+                    Log.d("DBHelper", "初始化用户数据: 老玩家，设置难度为普通");
+                }
+            }
+            
+            userStatus.put("difficulty", difficulty);
+            Log.d("DBHelper", "最终设置的难度: " + difficulty + ", 用户ID: " + userId);
             
             userStatus.put("first_collect_time", 0);
             db.insert("user_status", null, userStatus);
@@ -2934,31 +3037,6 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         return capacity;
     }
-    
-    /**
-     * 更新用户的背包容量
-     * @param userId 用户ID
-     * @param newCapacity 新的背包容量
-     * @return 是否更新成功
-     */
-    public boolean updateBackpackCapacity(int userId, int newCapacity) {
-        SQLiteDatabase db = getWritableDatabase();
-        ContentValues values = new ContentValues();
-        values.put("backpack_cap", newCapacity);
-        
-        int rowsAffected = db.update("user_status", values, "user_id = ?", 
-                new String[]{String.valueOf(userId)});
-        
-        boolean success = rowsAffected > 0;
-        if (success) {
-            Log.d("DBHelper", "用户" + userId + "背包容量更新为: " + newCapacity);
-        } else {
-            Log.e("DBHelper", "用户" + userId + "背包容量更新失败");
-        }
-        
-        return success;
-    }
-    
     /**
      * 更新区域采集次数到数据库
      * @param userId 用户ID
@@ -3853,7 +3931,73 @@ public class DBHelper extends SQLiteOpenHelper {
      * 重置用户数据（清空背包/装备，重新初始化初始物资）
      * @param userId 用户ID
      */
-//    public void resetUserData(int userId) {
+    /**
+     * 重置用户数据
+     * 修复：保留难度通关记录和关键成就，只重置当前游戏进度
+     * @param userId 用户ID
+     * @param difficulty 难度设置
+     */
+    public void resetUserData(int userId, String difficulty) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            // 修复：先备份关键的通关记录和成就数据
+            Map<String, Object> preservedData = new HashMap<>();
+            Cursor cursor = db.query("user_status", null, "user_id = ?", 
+                    new String[]{String.valueOf(userId)}, null, null, null);
+            
+            if (cursor.moveToFirst()) {
+                // 保留难度通关记录
+                preservedData.put("is_easy_cleared", cursor.getInt(cursor.getColumnIndexOrThrow("is_easy_cleared")));
+                preservedData.put("is_normal_cleared", cursor.getInt(cursor.getColumnIndexOrThrow("is_normal_cleared")));
+                preservedData.put("is_hard_cleared", cursor.getInt(cursor.getColumnIndexOrThrow("is_hard_cleared")));
+                
+                // 保留其他关键数据
+                preservedData.put("exp", cursor.getInt(cursor.getColumnIndexOrThrow("exp")));
+                preservedData.put("level", cursor.getInt(cursor.getColumnIndexOrThrow("level")));
+                preservedData.put("hope_points", cursor.getInt(cursor.getColumnIndexOrThrow("hope_points")));
+                preservedData.put("reincarnation_times", cursor.getInt(cursor.getColumnIndexOrThrow("reincarnation_times")));
+                
+                Log.d("DBHelper", "已备份用户关键数据，用户ID: " + userId);
+            }
+            cursor.close();
+            
+            // 清除背包数据
+            db.delete("backpack", "user_id = ?", new String[]{String.valueOf(userId)});
+            
+            // 清除装备数据
+            db.delete("equipment", "user_id = ?", new String[]{String.valueOf(userId)});
+            
+            // 清除资源冷却数据
+            db.delete("resource_cd", "user_id = ?", new String[]{String.valueOf(userId)});
+            
+            // 重新初始化用户数据
+            initUserData(userId, difficulty);
+            
+            // 恢复保留的关键数据
+            if (!preservedData.isEmpty()) {
+                ContentValues restoreValues = new ContentValues();
+                for (Map.Entry<String, Object> entry : preservedData.entrySet()) {
+                    Object value = entry.getValue();
+                    if (value instanceof Integer) {
+                        restoreValues.put(entry.getKey(), (Integer) value);
+                    }
+                }
+                
+                db.update("user_status", restoreValues, "user_id = ?", 
+                        new String[]{String.valueOf(userId)});
+                
+                Log.d("DBHelper", "已恢复用户关键数据，用户ID: " + userId);
+            }
+            
+            db.setTransactionSuccessful();
+            Log.d("DBHelper", "重置用户数据完成（已保留通关记录），用户ID: " + userId + ", 难度: " + difficulty);
+        } catch (Exception e) {
+            Log.e("DBHelper", "重置用户数据失败", e);
+        } finally {
+            db.endTransaction();
+        }
+    }
 //        SQLiteDatabase db = getWritableDatabase();
 //        db.beginTransaction(); // 开启事务，确保数据一致性
 //        try {

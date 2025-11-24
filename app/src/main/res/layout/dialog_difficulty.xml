@@ -52,7 +52,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="• 资源较少\n• 2天可轮回\n• 生存压力小"
+                android:text="• 资源较少\n• 随时轮回\n• 毫无压力"
                 android:textSize="14sp"
                 android:textColor="#CCCCCC"
                 android:layout_marginStart="16dp" />
@@ -80,7 +80,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="• 资源适中\n• 10天可轮回\n• 平衡体验"
+                android:text="• 资源适中\n• 5天可轮回\n• 难度适中"
                 android:textSize="14sp"
                 android:textColor="#CCCCCC"
                 android:layout_marginStart="16dp" />
@@ -107,7 +107,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="• 资源丰富\n• 15天可轮回\n• 生存挑战大"
+                android:text="• 资源丰富\n• 15天可轮回\n• 难度很大"
                 android:textSize="14sp"
                 android:textColor="#CCCCCC"
                 android:layout_marginStart="16dp" />

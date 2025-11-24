@@ -288,6 +288,12 @@ public class MainActivity extends BaseActivity {
             thirst = (int) userStatus.get("thirst");
             stamina = (int) userStatus.get("stamina");
             
+            // 加载难度设置
+            if (userStatus.containsKey("difficulty")) {
+                difficulty = (String) userStatus.get("difficulty");
+//                Log.d("GameLoading", "从数据库加载的难度: " + difficulty);
+            }
+            
             // 加载存档的坐标数据
             int savedX = (int) userStatus.get("current_x");
             int savedY = (int) userStatus.get("current_y");
@@ -307,7 +313,7 @@ public class MainActivity extends BaseActivity {
                 Log.d("CoordSync", "坐标已从存档加载: (" + savedX + ", " + savedY + ")");
             }
             
-            Log.d("StatusSync", "重新加载用户状态: 生命=" + life + ", 饥饿=" + hunger + ", 口渴=" + thirst + ", 体力=" + stamina + ", 坐标=(" + currentX + ", " + currentY + ")");
+            Log.d("StatusSync", "重新加载用户状态: 生命=" + life + ", 饥饿=" + hunger + ", 口渴=" + thirst + ", 体力=" + stamina + ", 难度=" + difficulty + ", 坐标=(" + currentX + ", " + currentY + ")");
             
             // 刷新状态显示 - 使用正确的方法名
             if (uiUpdater != null) {
@@ -602,6 +608,7 @@ public class MainActivity extends BaseActivity {
     
     /**
      * 处理放弃游戏逻辑
+     * 修复：保留难度通关记录和任务完成记录，只重置当前游戏进度
      */
     private void handleGameAbandon() {
         // 设置游戏结束状态，同时重置游戏开始状态
@@ -609,15 +616,18 @@ public class MainActivity extends BaseActivity {
         gameStateManager.setGameEnded();
         gameStateManager.setGameStarted(false); // 重置游戏开始状态
         
-        // 重置游戏数据
+        // 重置当前游戏进度，但保留难度通关记录和已完成任务
         dataManager.resetGameData(currentUserId);
         
-        // 重置任务进度（游戏失败时重置）
-        QuestManager questManager = QuestManager.getInstance(this);
-        questManager.resetQuestProgressOnGameFailure(currentUserId);
+        // 修复：不要重置任务进度，保留已完成的任务和难度通关记录
+        // 只重置当前游戏的进度，不是删除所有成就
+        // QuestManager questManager = QuestManager.getInstance(this);
+        // questManager.resetQuestProgressOnGameFailure(currentUserId); // 注释掉这行
         
-        // 关键修复：重置MyApplication中的用户ID，确保下次启动时重新初始化
-        MyApplication.currentUserId = -1;
+        // 修复：不要重置用户ID，保持登录状态
+        // MyApplication.currentUserId = -1; // 注释掉这行
+        
+        Log.i("GameAbandon", "游戏已放弃，当前进度已重置，但保留了难度通关记录和已完成任务");
         
         // 返回标题页
         Intent intent = new Intent(this, TitleActivity.class);

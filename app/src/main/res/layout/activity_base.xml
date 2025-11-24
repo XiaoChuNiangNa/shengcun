@@ -138,6 +138,20 @@
                 android:textColor="#FFFFFF"
                 android:textSize="18sp"
                 android:textStyle="bold"
+                android:gravity="center"
+                android:visibility="gone"/>
+
+            <!-- 对战按钮 -->
+            <Button
+                android:id="@+id/btn_task"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_marginEnd="20dp"
+                android:backgroundTint="#1E299B"
+                android:text="任务"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
                 android:gravity="center" />
 
             <!-- 贸易按钮 -->

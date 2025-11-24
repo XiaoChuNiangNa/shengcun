@@ -11,15 +11,13 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.example.myapplication3.R;
 import com.example.myapplication3.Constant;
 import com.example.myapplication3.ItemConstants;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class BuildingActivity extends BaseActivity {
 
@@ -394,7 +392,10 @@ public class BuildingActivity extends BaseActivity {
                         // 增加背包容量（永久）
                         int currentBackpackCap = dbHelper.getBackpackCapacity(userId);
                         int newBackpackCap = Math.min(150, currentBackpackCap + 10); // 最大150
-                        dbHelper.updateBackpackCapacity(userId, newBackpackCap);
+                        // 使用updateUserStatus方法更新背包容量
+                        Map<String, Object> updateData = new HashMap<>();
+                        updateData.put("backpack_cap", newBackpackCap);
+                        dbHelper.updateUserStatus(userId, updateData);
                         
                         Log.i("BuildingLog", "背包容量更新: " + currentBackpackCap + " -> " + newBackpackCap);
                         

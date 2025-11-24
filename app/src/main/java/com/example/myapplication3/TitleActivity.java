@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -209,7 +210,7 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
         DBHelper dbHelper = DBHelper.getInstance(this);
         int currentUserId = MyApplication.currentUserId;
         boolean isEasyCleared = dbHelper.isEasyDifficultyCleared(currentUserId);
-        boolean isNormalCleared = false; // 需要检查普通难度是否通关
+        boolean isNormalCleared = dbHelper.isNormalDifficultyCleared(currentUserId);
 
         // 设置难度选项的可用性
         // 简单难度始终可用
@@ -226,12 +227,16 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
         }
         
         // 困难难度：需要普通模式通关后解锁
-        // 暂时设为不可用，因为我们没有普通难度通关的检查逻辑
-        rbHard.setEnabled(false);
-        rbHard.setText("困难模式 (需普通模式通关)");
+        if (isNormalCleared) {
+            rbHard.setEnabled(true);
+            rbHard.setText("困难模式");
+        } else {
+            rbHard.setEnabled(false);
+            rbHard.setText("困难模式 (需普通模式通关)");
+        }
 
-        // 设置默认选中简单难度
-        rbEasy.setChecked(true);
+        // 设置默认选中普通难度，与默认值保持一致
+        rbNormal.setChecked(true);
 
         // 设置单选按钮的互斥逻辑（只允许选择已启用的选项）
         View.OnClickListener radioClickListener = new View.OnClickListener() {
@@ -271,13 +276,19 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
         btnConfirm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String difficulty = "普通";
+                // 默认值设为普通难度，与默认选中的rbNormal按钮保持一致
+                String difficulty = Constant.DIFFICULTY_NORMAL;
                 if (rbEasy.isChecked()) {
-                    difficulty = "简单";
+                    difficulty = Constant.DIFFICULTY_EASY;
+                } else if (rbNormal.isChecked()) {
+                    difficulty = Constant.DIFFICULTY_NORMAL;
                 } else if (rbHard.isChecked()) {
-                    difficulty = "困难";
+                    difficulty = Constant.DIFFICULTY_HARD;
                 }
 
+                // 添加日志显示选择的难度
+                android.util.Log.d("DifficultySelect", "用户选择的难度: " + difficulty);
+                
                 // 保存难度设置到SharedPreferences
                 SharedPreferences sp = getSharedPreferences("game_settings", MODE_PRIVATE);
                 SharedPreferences.Editor editor = sp.edit();
@@ -288,7 +299,14 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
                 GameStateManager gameStateManager = GameStateManager.getInstance(TitleActivity.this);
                 gameStateManager.setGameStarted(true);
 
-                Toast.makeText(TitleActivity.this, "难度设置为：" + difficulty, Toast.LENGTH_SHORT).show();
+                // 显示友好的难度名称
+                String difficultyName = "普通";
+                if (Constant.DIFFICULTY_EASY.equals(difficulty)) {
+                    difficultyName = "简单";
+                } else if (Constant.DIFFICULTY_HARD.equals(difficulty)) {
+                    difficultyName = "困难";
+                }
+                Toast.makeText(TitleActivity.this, "难度设置为：" + difficultyName, Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
                 
                 // 开始游戏
@@ -301,19 +319,49 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
 
     /**
      * 使用指定难度开始游戏
+     * @param difficulty 已经是英文常量（如"easy", "normal", "hard"）
      */
     private void startGameWithDifficulty(String difficulty) {
+        // 修复：传入的difficulty已经是英文常量，直接使用，无需再次转换
+        String difficultyConstant = difficulty;
+        
+        // 如果是中文显示名称，转换为英文常量（兼容性处理）
+        if ("简单".equals(difficulty)) {
+            difficultyConstant = Constant.DIFFICULTY_EASY;
+        } else if ("普通".equals(difficulty)) {
+            difficultyConstant = Constant.DIFFICULTY_NORMAL;
+        } else if ("困难".equals(difficulty)) {
+            difficultyConstant = Constant.DIFFICULTY_HARD;
+        } else {
+            // 已经是英文常量，直接使用
+            difficultyConstant = difficulty;
+        }
+        
         // 保存难度设置到SharedPreferences
         SharedPreferences sp = getSharedPreferences("game_settings", MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
-        editor.putString("difficulty", difficulty);
+        editor.putString("difficulty", difficultyConstant);
         editor.apply();
+        
+        Log.d("DifficultySelect", "选择的难度: " + difficulty + " -> 保存的常量: " + difficultyConstant);
 
         // 设置游戏已开始状态
         GameStateManager gameStateManager = GameStateManager.getInstance(TitleActivity.this);
         gameStateManager.setGameStarted(true);
 
-        Toast.makeText(TitleActivity.this, "难度设置为：" + difficulty, Toast.LENGTH_SHORT).show();
+        // 显示友好的难度名称
+        String difficultyDisplayName;
+        if (Constant.DIFFICULTY_EASY.equals(difficultyConstant)) {
+            difficultyDisplayName = "简单";
+        } else if (Constant.DIFFICULTY_HARD.equals(difficultyConstant)) {
+            difficultyDisplayName = "困难";
+        } else {
+            difficultyDisplayName = "普通";
+        }
+        Toast.makeText(TitleActivity.this, "难度设置为：" + difficultyDisplayName, Toast.LENGTH_SHORT).show();
+        
+        // 添加难度设置的日志
+        Log.d("DifficultySelect", "开始游戏，保存的难度常量: " + difficultyConstant);
         
         // 开始游戏
         startActivity(new Intent(TitleActivity.this, MainActivity.class));

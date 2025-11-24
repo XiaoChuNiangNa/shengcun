@@ -259,9 +259,10 @@ public class QuestManager {
             return false; // 已完成的任务不再激活
         }
         
-        // 第一个任务总是激活
+        // 检查第一个任务：只有未完成时才激活
         if (questIndex == 0) {
-            return true;
+            // 对于第一个任务，检查是否已完成
+            return userQuest == null || !userQuest.isCompleted();
         }
         
         // 检查前一个任务是否已完成
@@ -665,7 +666,7 @@ public class QuestManager {
         // 清除数据库中的任务进度
         dbHelper.clearQuestProgress(userId);
         
-        // 重置新手轮回状态
+        // 重置新手轮回状态（仅在游戏失败时重置，轮回时保留）
         userData.hasCompletedNewbieCycle = false;
         dbHelper.setNewbieCycleCompleted(userId, false);
         
@@ -673,6 +674,24 @@ public class QuestManager {
         saveQuestProgress(userId, userData);
         
         Log.d("QuestManager", "用户" + userId + "任务进度已重置（游戏失败）");
+    }
+    
+    /**
+     * 轮回时保留任务进度
+     */
+    public void resetQuestProgressOnReincarnation(int userId) {
+        Log.d("QuestManager", "轮回，保留用户" + userId + "的任务进度");
+        
+        // 获取用户数据
+        UserQuestData userData = getUserQuestData(userId);
+        
+        // 保留所有任务进度（不清除已完成任务）
+        // 不重新加载活跃任务列表，保持当前任务进度
+        
+        // 保存当前进度
+        saveQuestProgress(userId, userData);
+        
+        Log.d("QuestManager", "用户" + userId + "任务进度已保留（轮回）");
     }
 
     public void resetAllQuests(int userId) {

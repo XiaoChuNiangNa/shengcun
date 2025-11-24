@@ -892,6 +892,17 @@ public class EventHandler implements View.OnClickListener {
             return;
         }
 
+        // 检查新手任务是否全部完成
+        boolean hasCompletedNewbieCycle = questManager.hasCompletedNewbieCycle(MyApplication.currentUserId);
+        if (hasCompletedNewbieCycle) {
+            // 新手任务全部完成后隐藏任务按钮
+            btnQuest.setText("任务");
+            btnQuest.setBackgroundColor(0x00000000); // 完全透明
+            btnQuest.setEnabled(false); // 禁用按钮
+            btnQuest.setAlpha(0.5f); // 设置半透明视觉效果
+            return;
+        }
+
         // 获取当前任务状态
         int questStatus = questManager.getCurrentQuestStatus(MyApplication.currentUserId);
         Quest currentQuest = questManager.getCurrentActiveQuest(MyApplication.currentUserId);
@@ -900,8 +911,14 @@ public class EventHandler implements View.OnClickListener {
             // 没有任务：设置透明背景
             btnQuest.setText("任务");
             btnQuest.setBackgroundColor(0x00000000); // 完全透明
+            btnQuest.setEnabled(true); // 启用按钮
+            btnQuest.setAlpha(1.0f); // 完全不透明
             return;
         }
+
+        // 确保按钮启用且完全不透明
+        btnQuest.setEnabled(true);
+        btnQuest.setAlpha(1.0f);
 
         // 根据任务状态设置按钮文本和背景
         switch (questStatus) {

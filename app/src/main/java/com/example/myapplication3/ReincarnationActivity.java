@@ -17,8 +17,8 @@ import java.util.Map;
 public class ReincarnationActivity extends BaseActivity {
     
     // 不同难度下的轮回天数要求
-    private static final int EASY_MIN_DAYS = 2;    // 简单模式至少2天
-    private static final int NORMAL_MIN_DAYS = 10;  // 普通模式至少10天
+    private static final int EASY_MIN_DAYS = 0;    // 简单模式无时间限制
+    private static final int NORMAL_MIN_DAYS = 5;   // 普通模式至少5天
     private static final int HARD_MIN_DAYS = 15;    // 困难模式至少15天
 
     @Override
@@ -67,7 +67,12 @@ public class ReincarnationActivity extends BaseActivity {
         // 根据难度获取最小天数要求
         int minDaysRequired = getMinDaysRequired(currentDifficulty);
         
-        // 检查天数是否满足要求
+        // 简单模式无时间限制，直接允许轮回
+        if (Constant.DIFFICULTY_EASY.equals(currentDifficulty)) {
+            return true;
+        }
+        
+        // 检查天数是否满足要求（仅限普通和困难模式）
         if (currentDay < minDaysRequired) {
             int daysLeft = minDaysRequired - currentDay;
             String difficultyName = getDifficultyDisplayName(currentDifficulty);
@@ -155,9 +160,9 @@ public class ReincarnationActivity extends BaseActivity {
     private void showConfirmDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("确认轮回")
-                .setMessage("即将进入轮回，是否开始？")
-                .setPositiveButton("确认", (dialog, which) -> reincarnate())
-                .setNegativeButton("取消", null)
+                .setMessage("准备好轮回了吗？")
+                .setPositiveButton("开始", (dialog, which) -> reincarnate())
+                .setNegativeButton("还没", null)
                 .show();
     }
 
@@ -165,7 +170,11 @@ public class ReincarnationActivity extends BaseActivity {
         // 1. 获取当前游戏难度
         String currentDifficulty = getCurrentDifficulty();
         
-        // 2. 执行完全重置（包括背包、建筑、地图等所有数据）
+        // 2. 重置任务进度（保留新手任务）
+        QuestManager questManager = QuestManager.getInstance(this);
+        questManager.resetQuestProgressOnReincarnation(userId);
+        
+        // 3. 执行完全重置（包括背包、建筑、地图等所有数据）
         dbHelper.resetGame(userId);
 
         // 3. 新增：如果是测试账号，重新初始化其特权数据
@@ -187,12 +196,12 @@ public class ReincarnationActivity extends BaseActivity {
         GameStateManager gameStateManager = GameStateManager.getInstance(this);
         gameStateManager.resetGame();
         
-        android.util.Log.i("GameState", "ReincarnationActivity - 轮回完成，游戏状态已重置");
+        android.util.Log.i("GameState", "ReincarnationActivity - 轮回成功！");
 
         // 8. 提示信息及页面跳转（轮回后返回标题页）
-        Toast.makeText(this,
-                "轮回成功！请前往成就系统领取希望点数奖励",
-                Toast.LENGTH_LONG).show();
+//        Toast.makeText(this,
+//                "轮回成功！请前往成就系统领取希望点数奖励",
+//                Toast.LENGTH_LONG).show();
         dbHelper.clearAllSaveSlots(userId);
 
         // 轮回后返回标题页，而不是直接进入游戏
