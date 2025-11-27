@@ -45,6 +45,16 @@ public class ToolCategoryManager {
         TOOL_CATEGORY_MAP.put(ItemConstants.EQUIP_STONE_FISHING_ROD, ToolCategory.FISHING_ROD);
         TOOL_CATEGORY_MAP.put(ItemConstants.EQUIP_IRON_FISHING_ROD, ToolCategory.FISHING_ROD);
         TOOL_CATEGORY_MAP.put(ItemConstants.EQUIP_DIAMOND_FISHING_ROD, ToolCategory.FISHING_ROD);
+        
+        // 铲子类工具
+        TOOL_CATEGORY_MAP.put(ItemConstants.EQUIP_STONE_SHOVEL, ToolCategory.SHOVEL);
+        TOOL_CATEGORY_MAP.put(ItemConstants.EQUIP_IRON_SHOVEL, ToolCategory.SHOVEL);
+        TOOL_CATEGORY_MAP.put(ItemConstants.EQUIP_DIAMOND_SHOVEL, ToolCategory.SHOVEL);
+        
+        // 锤子类工具
+        TOOL_CATEGORY_MAP.put(ItemConstants.EQUIP_STONE_HAMMER, ToolCategory.HAMMER);
+        TOOL_CATEGORY_MAP.put(ItemConstants.EQUIP_IRON_HAMMER, ToolCategory.HAMMER);
+        TOOL_CATEGORY_MAP.put(ItemConstants.EQUIP_DIAMOND_HAMMER, ToolCategory.HAMMER);
     }
     
     /**

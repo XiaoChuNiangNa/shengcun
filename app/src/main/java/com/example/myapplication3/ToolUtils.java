@@ -39,18 +39,24 @@ public class ToolUtils {
             case ItemConstants.EQUIP_STONE_PICKAXE:
             case ItemConstants.EQUIP_STONE_SICKLE:
             case ItemConstants.EQUIP_STONE_FISHING_ROD:
+            case ItemConstants.EQUIP_STONE_SHOVEL:
+            case ItemConstants.EQUIP_STONE_HAMMER:
                 return Constant.STONE_TOOL_DURABILITY; // 例如10
             // 铁质工具
             case ItemConstants.EQUIP_IRON_AXE:
             case ItemConstants.EQUIP_IRON_PICKAXE:
             case ItemConstants.EQUIP_IRON_SICKLE:
             case ItemConstants.EQUIP_IRON_FISHING_ROD:
+            case ItemConstants.EQUIP_IRON_SHOVEL:
+            case ItemConstants.EQUIP_IRON_HAMMER:
                 return Constant.IRON_TOOL_DURABILITY; // 例如20
             // 钻石工具
             case ItemConstants.EQUIP_DIAMOND_AXE:
             case ItemConstants.EQUIP_DIAMOND_PICKAXE:
             case ItemConstants.EQUIP_DIAMOND_SICKLE:
             case ItemConstants.EQUIP_DIAMOND_FISHING_ROD:
+            case ItemConstants.EQUIP_DIAMOND_SHOVEL:
+            case ItemConstants.EQUIP_DIAMOND_HAMMER:
                 return Constant.DIAMOND_TOOL_DURABILITY; // 例如30
             default:
                 return 0;
@@ -89,9 +95,13 @@ public class ToolUtils {
             case PICKAXE:
                 return "岩石区、雪山资源产出+" + bonus;
             case SICKLE:
-                return "草原、沙漠、沼泽资源产出+" + bonus;
+                return "草原、海滩、沙漠、雪原资源产出+" + bonus;
             case FISHING_ROD:
-                return "河流、海洋、深海资源产出+" + bonus;
+                return "河流、海洋、深海、沼泽资源产出+" + bonus;
+            case SHOVEL:
+                return "草原、海滩、沙漠、雪原采集时有" + (bonus * 10) + "%概率额外获得植物资源";
+            case HAMMER:
+                return "岩石区、雪山采集时有" + (bonus * 10) + "%概率额外获得矿石资源";
             case NONE:
             default:
                 return "无特殊效果";
@@ -113,18 +123,24 @@ public class ToolUtils {
             case ItemConstants.EQUIP_STONE_PICKAXE:
             case ItemConstants.EQUIP_STONE_SICKLE:
             case ItemConstants.EQUIP_STONE_FISHING_ROD:
+            case ItemConstants.EQUIP_STONE_SHOVEL:
+            case ItemConstants.EQUIP_STONE_HAMMER:
                 return ToolLevel.LEVEL_1;
             // 铁质工具
             case ItemConstants.EQUIP_IRON_AXE:
             case ItemConstants.EQUIP_IRON_PICKAXE:
             case ItemConstants.EQUIP_IRON_SICKLE:
             case ItemConstants.EQUIP_IRON_FISHING_ROD:
+            case ItemConstants.EQUIP_IRON_SHOVEL:
+            case ItemConstants.EQUIP_IRON_HAMMER:
                 return ToolLevel.LEVEL_2;
             // 钻石工具
             case ItemConstants.EQUIP_DIAMOND_AXE:
             case ItemConstants.EQUIP_DIAMOND_PICKAXE:
             case ItemConstants.EQUIP_DIAMOND_SICKLE:
             case ItemConstants.EQUIP_DIAMOND_FISHING_ROD:
+            case ItemConstants.EQUIP_DIAMOND_SHOVEL:
+            case ItemConstants.EQUIP_DIAMOND_HAMMER:
                 return ToolLevel.LEVEL_3;
             default:
                 return ToolLevel.UNKNOWN;

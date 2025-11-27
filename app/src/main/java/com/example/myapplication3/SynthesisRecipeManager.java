@@ -35,6 +35,16 @@ public class SynthesisRecipeManager {
         recipes.add(new Recipe(ItemConstants.EQUIP_STONE_FISHING_ROD, createStoneFishingRodReq()));
         recipes.add(new Recipe(ItemConstants.EQUIP_IRON_FISHING_ROD, createIronFishingRodReq()));
         recipes.add(new Recipe(ItemConstants.EQUIP_DIAMOND_FISHING_ROD, createDiamondFishingRodReq()));
+        
+        // 铲子系列
+        recipes.add(new Recipe(ItemConstants.EQUIP_STONE_SHOVEL, createStoneShovelReq()));
+        recipes.add(new Recipe(ItemConstants.EQUIP_IRON_SHOVEL, createIronShovelReq()));
+        recipes.add(new Recipe(ItemConstants.EQUIP_DIAMOND_SHOVEL, createDiamondShovelReq()));
+        
+        // 锤子系列
+        recipes.add(new Recipe(ItemConstants.EQUIP_STONE_HAMMER, createStoneHammerReq()));
+        recipes.add(new Recipe(ItemConstants.EQUIP_IRON_HAMMER, createIronHammerReq()));
+        recipes.add(new Recipe(ItemConstants.EQUIP_DIAMOND_HAMMER, createDiamondHammerReq()));
 
         // 其他合成物品
         recipes.add(new Recipe(ItemConstants.ITEM_STONE, createStoneFromSmallStonesReq()));//小石子合成石头
@@ -260,6 +270,54 @@ public class SynthesisRecipeManager {
     private static Map<String, Integer> createStoneFromSmallStonesReq() {
         Map<String, Integer> req = new HashMap<>();
         req.put(ItemConstants.ITEM_SMALL_STONE, 4);
+        return req;
+    }
+
+    // 石铲合成配方（1个石头+2个木头）
+    private static Map<String, Integer> createStoneShovelReq() {
+        Map<String, Integer> req = new HashMap<>();
+        req.put(ItemConstants.ITEM_STONE, 1);
+        req.put(ItemConstants.ITEM_WOOD, 2);
+        return req;
+    }
+
+    // 铁铲合成配方（1个铁锭+2个木头）
+    private static Map<String, Integer> createIronShovelReq() {
+        Map<String, Integer> req = new HashMap<>();
+        req.put(ItemConstants.ITEM_IRON_INGOT, 1);
+        req.put(ItemConstants.ITEM_WOOD, 2);
+        return req;
+    }
+
+    // 钻石铲合成配方（1个钻石+2个木头）
+    private static Map<String, Integer> createDiamondShovelReq() {
+        Map<String, Integer> req = new HashMap<>();
+        req.put(ItemConstants.ITEM_DIAMOND, 1);
+        req.put(ItemConstants.ITEM_WOOD, 2);
+        return req;
+    }
+
+    // 石锤合成配方（3个石头+3个木头）
+    private static Map<String, Integer> createStoneHammerReq() {
+        Map<String, Integer> req = new HashMap<>();
+        req.put(ItemConstants.ITEM_STONE, 3);
+        req.put(ItemConstants.ITEM_WOOD, 3);
+        return req;
+    }
+
+    // 铁锤合成配方（3个铁锭+3个木头）
+    private static Map<String, Integer> createIronHammerReq() {
+        Map<String, Integer> req = new HashMap<>();
+        req.put(ItemConstants.ITEM_IRON_INGOT, 3);
+        req.put(ItemConstants.ITEM_WOOD, 3);
+        return req;
+    }
+
+    // 钻石锤合成配方（3个钻石+3个木头）
+    private static Map<String, Integer> createDiamondHammerReq() {
+        Map<String, Integer> req = new HashMap<>();
+        req.put(ItemConstants.ITEM_DIAMOND, 3);
+        req.put(ItemConstants.ITEM_WOOD, 3);
         return req;
     }
 }

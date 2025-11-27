@@ -8,6 +8,8 @@ public enum ToolCategory {
     PICKAXE("镐", "用于挖掘矿石和岩石资源"),
     SICKLE("镰刀", "用于收割植物和农作物"),
     FISHING_ROD("鱼竿", "用于钓鱼和采集水生资源"),
+    SHOVEL("铲子", "用于挖掘土壤和植物类资源"),
+    HAMMER("锤子", "用于敲击岩石和矿石类资源"),
     NONE("无", "没有装备工具");
 
     private final String name;

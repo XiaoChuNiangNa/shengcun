@@ -73,6 +73,16 @@ public class ToolIllustrationActivity extends AppCompatActivity {
         addToolFromConstants(ItemConstants.EQUIP_STONE_SICKLE, "基础的收割工具，可以收割农作物", "攻击力：3\n耐久度：40\n效率：中等");
         addToolFromConstants(ItemConstants.EQUIP_STONE_FISHING_ROD, "基础的钓鱼工具，可以在水域中钓鱼", "攻击力：2\n耐久度：35\n效率：中等");
         
+        // 铲子工具
+        addToolFromConstants(ItemConstants.EQUIP_STONE_SHOVEL, "基础的挖掘工具，适合采集植物类资源", "攻击力：3\n耐久度：30\n效率：中等\n草原/海滩/沙漠/雪原10%概率额外获得植物资源");
+        addToolFromConstants(ItemConstants.EQUIP_IRON_SHOVEL, "进阶的挖掘工具，植物资源采集率更高", "攻击力：6\n耐久度：60\n效率：高\n草原/海滩/沙漠/雪原20%概率额外获得植物资源");
+        addToolFromConstants(ItemConstants.EQUIP_DIAMOND_SHOVEL, "顶级的挖掘工具，植物资源采集率极高", "攻击力：9\n耐久度：90\n效率：极高\n草原/海滩/沙漠/雪原30%概率额外获得植物资源");
+        
+        // 锤子工具
+        addToolFromConstants(ItemConstants.EQUIP_STONE_HAMMER, "基础的敲击工具，适合采集矿石类资源", "攻击力：4\n耐久度：40\n效率：中等\n岩石区/雪山10%概率额外获得矿石资源");
+        addToolFromConstants(ItemConstants.EQUIP_IRON_HAMMER, "进阶的敲击工具，矿石资源采集率更高", "攻击力：7\n耐久度：80\n效率：高\n岩石区/雪山20%概率额外获得矿石资源");
+        addToolFromConstants(ItemConstants.EQUIP_DIAMOND_HAMMER, "顶级的敲击工具，矿石资源采集率极高", "攻击力：11\n耐久度：120\n效率：极高\n岩石区/雪山30%概率额外获得矿石资源");
+        
         // 铁质工具
         addToolFromConstants(ItemConstants.EQUIP_IRON_AXE, "进阶的伐木工具，砍伐效率更高", "攻击力：8\n耐久度：100\n效率：高");
         addToolFromConstants(ItemConstants.EQUIP_IRON_PICKAXE, "进阶的采矿工具，开采效率更高", "攻击力：7\n耐久度：90\n效率：高");
@@ -113,14 +123,20 @@ public class ToolIllustrationActivity extends AppCompatActivity {
             case ItemConstants.EQUIP_STONE_PICKAXE: return "shigao";
             case ItemConstants.EQUIP_STONE_SICKLE: return "shiliandao";
             case ItemConstants.EQUIP_STONE_FISHING_ROD: return "shizhiyugan";
+            case ItemConstants.EQUIP_STONE_SHOVEL: return "shichan";
+            case ItemConstants.EQUIP_STONE_HAMMER: return "shichui";
             case ItemConstants.EQUIP_IRON_AXE: return "tiefu";
             case ItemConstants.EQUIP_IRON_PICKAXE: return "tiegao";
             case ItemConstants.EQUIP_IRON_SICKLE: return "tieliandao";
             case ItemConstants.EQUIP_IRON_FISHING_ROD: return "tiezhiyugan";
+            case ItemConstants.EQUIP_IRON_SHOVEL: return "tiechan";
+            case ItemConstants.EQUIP_IRON_HAMMER: return "tiechui";
             case ItemConstants.EQUIP_DIAMOND_AXE: return "zuanshifu";
             case ItemConstants.EQUIP_DIAMOND_PICKAXE: return "zuanshigao";
             case ItemConstants.EQUIP_DIAMOND_SICKLE: return "zuanshiliandao";
             case ItemConstants.EQUIP_DIAMOND_FISHING_ROD: return "zuanshiyugan";
+            case ItemConstants.EQUIP_DIAMOND_SHOVEL: return "zuanshichan";
+            case ItemConstants.EQUIP_DIAMOND_HAMMER: return "zuanshichui";
             default: return "unknown";
         }
     }

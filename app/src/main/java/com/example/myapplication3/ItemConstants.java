@@ -71,6 +71,16 @@ public class ItemConstants {
     public static final String EQUIP_STONE_FISHING_ROD = "石质鱼竿";
     public static final String EQUIP_IRON_FISHING_ROD = "铁质鱼竿";
     public static final String EQUIP_DIAMOND_FISHING_ROD = "钻石鱼竿";
+    
+    // 新增铲子工具
+    public static final String EQUIP_STONE_SHOVEL = "石铲";
+    public static final String EQUIP_IRON_SHOVEL = "铁铲";
+    public static final String EQUIP_DIAMOND_SHOVEL = "钻石铲";
+    
+    // 新增锤子工具
+    public static final String EQUIP_STONE_HAMMER = "石锤";
+    public static final String EQUIP_IRON_HAMMER = "铁锤";
+    public static final String EQUIP_DIAMOND_HAMMER = "钻石锤";
 
     // 合成物品类
     public static final String ITEM_MEDICINE = "草药";
@@ -136,18 +146,24 @@ public class ItemConstants {
         ITEM_STONE_PICKAXE,
         ITEM_STONE_AXE,
         ITEM_STONE_FISHING_ROD,
+        EQUIP_STONE_SHOVEL,
+        EQUIP_STONE_HAMMER,
         
         // 铁质工具
         EQUIP_IRON_PICKAXE,
         EQUIP_IRON_AXE,
         EQUIP_IRON_FISHING_ROD,
         EQUIP_IRON_SICKLE,
+        EQUIP_IRON_SHOVEL,
+        EQUIP_IRON_HAMMER,
         
         // 钻石工具
         EQUIP_DIAMOND_PICKAXE,
         EQUIP_DIAMOND_AXE,
         EQUIP_DIAMOND_FISHING_ROD,
         EQUIP_DIAMOND_SICKLE,
+        EQUIP_DIAMOND_SHOVEL,
+        EQUIP_DIAMOND_HAMMER,
         
         // 其他工具
         ITEM_WOODEN_BOAT,

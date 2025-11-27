@@ -611,8 +611,18 @@ public class EventHandler implements View.OnClickListener {
 
         // 处理科技加成
         List<AreaResourceManager.CollectedItem> bonusItems = handleTechBonuses(areaType, bonusTipsList);
+        
+        // 处理新工具的概率性加成
+        List<AreaResourceManager.CollectedItem> specialToolBonusItems = handleSpecialToolBonus(activity.currentEquip, areaType, baseItems);
+        if (!specialToolBonusItems.isEmpty()) {
+            for (AreaResourceManager.CollectedItem item : specialToolBonusItems) {
+                bonusTipsList.add("特殊工具加成：额外获得" + item.name + "×" + item.count);
+            }
+        }
+        
         List<AreaResourceManager.CollectedItem> allItems = new ArrayList<>(baseItems);
         allItems.addAll(bonusItems);
+        allItems.addAll(specialToolBonusItems);
 
         // 在采集前检查背包容量
         int totalItemsToAdd = allItems.stream().mapToInt(item -> item.count).sum();
@@ -1261,11 +1271,61 @@ public class EventHandler implements View.OnClickListener {
         } else if (toolType.contains("钻石鱼竿") && (areaType.equals("河流") || areaType.equals("海洋") || areaType.equals("深海") || areaType.equals("沼泽"))) {
             return 3; // 钻石鱼竿在河流、海洋、深海、沼泽额外获得3个鱼
         }
+        // 新增铲子工具 - 概率性加成不在这里计算
+        // 新增锤子工具 - 概率性加成不在这里计算
         
-        return 0; // 不匹配的地形无加成
+        return 0; // 不匹配的地形无固定加成
     }
 
-        return bonus;
+    /**
+     * 处理新工具的概率性资源加成
+     * @param toolType 工具类型
+     * @param areaType 区域类型
+     * @param baseItems 基础采集物品列表
+     * @return 额外获得的物品列表
+     */
+    private List<AreaResourceManager.CollectedItem> handleSpecialToolBonus(String toolType, String areaType, List<AreaResourceManager.CollectedItem> baseItems) {
+        List<AreaResourceManager.CollectedItem> bonusItems = new ArrayList<>();
+        
+        if (toolType == null || toolType.equals("无") || baseItems.isEmpty()) {
+            return bonusItems;
+        }
+        
+        Random random = new Random();
+        
+        // 铲子工具 - 植物类资源概率性加成
+        if ((toolType.contains("石铲") || toolType.contains("铁铲") || toolType.contains("钻石铲")) &&
+            (areaType.equals("草原") || areaType.equals("海滩") || areaType.equals("沙漠") || areaType.equals("雪原"))) {
+            
+            int probability = toolType.contains("石铲") ? 10 : 
+                           toolType.contains("铁铲") ? 20 : 30;
+            
+            if (random.nextInt(100) < probability) {
+                // 随机选择一个植物类资源
+                String[] plantResources = {"杂草", "浆果", "药草", "纤维", "土豆", "胡萝卜", "甜菜", "菠菜"};
+                String selectedPlant = plantResources[random.nextInt(plantResources.length)];
+                bonusItems.add(new AreaResourceManager.CollectedItem(selectedPlant, 1));
+                Log.d("SpecialToolBonus", "铲子工具触发概率加成：" + selectedPlant);
+            }
+        }
+        
+        // 锤子工具 - 矿石类资源概率性加成
+        if ((toolType.contains("石锤") || toolType.contains("铁锤") || toolType.contains("钻石锤")) &&
+            (areaType.equals("岩石区") || areaType.equals("雪山"))) {
+            
+            int probability = toolType.contains("石锤") ? 10 : 
+                           toolType.contains("铁锤") ? 20 : 30;
+            
+            if (random.nextInt(100) < probability) {
+                // 随机选择一个矿石类资源
+                String[] oreResources = {"石头", "铁矿", "宝石", "燧石", "硫磺", "煤炭"};
+                String selectedOre = oreResources[random.nextInt(oreResources.length)];
+                bonusItems.add(new AreaResourceManager.CollectedItem(selectedOre, 1));
+                Log.d("SpecialToolBonus", "锤子工具触发概率加成：" + selectedOre);
+            }
+        }
+        
+        return bonusItems;
     }
 
     /**
