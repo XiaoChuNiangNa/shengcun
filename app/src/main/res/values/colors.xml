@@ -37,4 +37,16 @@
     <color name="holo_red_dark">#D32F2F</color>
     <color name="colorPrimary">#1E299B</color>
     <color name="colorAccent">#FF4081</color>
+    
+    <!-- Boss战斗界面新增颜色 -->
+    <color name="dark_blue">#1976D2</color>
+    <color name="dark_red">#C62828</color>
+    <color name="dark_green">#2E7D32</color>
+    <color name="purple">#9C27B0</color>
+    
+    <!-- 任务系统新增颜色 -->
+    <color name="quest_newbie_color">#FF6B35</color>
+    <color name="quest_claimable_color">#FFD700</color>
+    <color name="quest_active_color">#4CAF50</color>
+    <color name="default_text_color">#FFFFFF</color>
 </resources>

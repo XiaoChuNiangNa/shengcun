@@ -4494,9 +4494,9 @@ public class DBHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("current_map", "fantasy_continent");
-        // 设置幻想大陆的初始坐标
-        values.put("current_x", 50);
-        values.put("current_y", 50);
+        // 设置幻想大陆的传送门坐标（1, 1）
+        values.put("current_x", 1);
+        values.put("current_y", 1);
         int rowsAffected = db.update("user_status", values, "user_id=?",
                 new String[]{String.valueOf(userId)});
         return rowsAffected > 0;
@@ -4509,9 +4509,10 @@ public class DBHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put("current_map", "main_world");
-        // 设置主世界的初始坐标
-        values.put("current_x", 10);
-        values.put("current_y", 10);
+        // 设置主世界的传送门坐标（需要找到主世界地图中传送门的位置）
+        // 根据GameMapData.FANTASY_CONTINENT_MAP，主世界的传送门位置应该是对应的
+        values.put("current_x", 1);
+        values.put("current_y", 1);
         int rowsAffected = db.update("user_status", values, "user_id=?",
                 new String[]{String.valueOf(userId)});
         return rowsAffected > 0;
@@ -4545,14 +4546,6 @@ public class DBHelper extends SQLiteOpenHelper {
         return false;
     }
 
-    /**
-     * 检查当前用户所在位置是否有传送门（重载版本，自动获取坐标）
-     */
-    public boolean checkPortalAtCurrentPosition(int userId) {
-        int currentX = getCurrentX();
-        int currentY = getCurrentY();
-        return checkPortalAtCurrentPosition(userId, currentX, currentY);
-    }
 
     /**
      * 获取仓库物品
@@ -5469,6 +5462,237 @@ public class DBHelper extends SQLiteOpenHelper {
             Log.e("DBHelper", "用户数据初始化失败", e);
             e.printStackTrace();
         }
+    }
+
+    // ========== 新增的数据库方法 ==========
+
+    /**
+     * 获取玩家已建造的建筑数量
+     */
+    public int getBuiltBuildingCount(int userId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query("user_buildings", 
+                    new String[]{"COUNT(*)"}, 
+                    "user_id=?", 
+                    new String[]{String.valueOf(userId)}, 
+                    null, null, null);
+            
+            if (cursor.moveToFirst()) {
+                return cursor.getInt(0);
+            }
+        } catch (Exception e) {
+            Log.e("DBHelper", "获取建筑数量失败", e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * 获取玩家已探索的地形类型列表（去重）
+     */
+    public List<String> getExploredTerrainTypes(int userId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = null;
+        List<String> terrainTypes = new ArrayList<>();
+        
+        try {
+            cursor = db.query(true, "exploration_records", 
+                    new String[]{"terrain_type"}, 
+                    "user_id=?", 
+                    new String[]{String.valueOf(userId)}, 
+                    null, null, null, null);
+            
+            while (cursor.moveToNext()) {
+                String terrainType = cursor.getString(0);
+                if (terrainType != null && !terrainType.isEmpty()) {
+                    terrainTypes.add(terrainType);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("DBHelper", "获取已探索地形类型失败", e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        
+        return terrainTypes;
+    }
+
+    /**
+     * 获取玩家等级
+     */
+    public int getPlayerLevel(int userId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query("user_status", 
+                    new String[]{"level"}, 
+                    "user_id=?", 
+                    new String[]{String.valueOf(userId)}, 
+                    null, null, null);
+            
+            if (cursor.moveToFirst()) {
+                return cursor.getInt(0);
+            }
+        } catch (Exception e) {
+            Log.e("DBHelper", "获取玩家等级失败", e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return 1; // 默认等级1
+    }
+
+    /**
+     * 检查今天是否已完成神殿挑战
+     */
+    public boolean hasCompletedTempleChallengeToday(int userId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            // 获取当前游戏天数
+            cursor = db.query("user_status", 
+                    new String[]{"game_day"}, 
+                    "user_id=?", 
+                    new String[]{String.valueOf(userId)}, 
+                    null, null, null);
+            
+            if (cursor.moveToFirst()) {
+                int currentDay = cursor.getInt(0);
+                
+                cursor.close();
+                
+                // 查询今天是否已完成挑战
+                cursor = db.query("temple_challenge_records", 
+                        new String[]{"COUNT(*)"}, 
+                        "user_id=? AND challenge_day=?", 
+                        new String[]{
+                            String.valueOf(userId), 
+                            String.valueOf(currentDay)
+                        }, 
+                        null, null, null);
+                
+                if (cursor.moveToFirst()) {
+                    return cursor.getInt(0) > 0;
+                }
+            }
+        } catch (Exception e) {
+            Log.e("DBHelper", "检查神殿挑战状态失败", e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 标记神殿挑战已完成
+     */
+    public void markTempleChallengeCompleted(int userId) {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            // 获取当前游戏天数
+            Cursor cursor = db.query("user_status", 
+                    new String[]{"game_day"}, 
+                    "user_id=?", 
+                    new String[]{String.valueOf(userId)}, 
+                    null, null, null);
+            
+            if (cursor.moveToFirst()) {
+                int currentDay = cursor.getInt(0);
+                cursor.close();
+                
+                // 插入挑战记录
+                ContentValues values = new ContentValues();
+                values.put("user_id", userId);
+                values.put("challenge_day", currentDay);
+                values.put("completed_time", System.currentTimeMillis());
+                
+                db.insert("temple_challenge_records", null, values);
+                
+                Log.d("DBHelper", "神殿挑战已标记完成：用户ID=" + userId + ", 第" + currentDay + "天");
+            }
+        } catch (Exception e) {
+            Log.e("DBHelper", "标记神殿挑战完成失败", e);
+        }
+    }
+
+    /**
+     * 检查当前位置是否有传送门
+     */
+    public boolean checkPortalAtCurrentPosition(int userId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            // 获取用户当前位置
+            cursor = db.query("user_status", 
+                    new String[]{"current_x", "current_y"}, 
+                    "user_id=?", 
+                    new String[]{String.valueOf(userId)}, 
+                    null, null, null);
+            
+            if (cursor.moveToFirst()) {
+                int currentX = cursor.getInt(0);
+                int currentY = cursor.getInt(1);
+                cursor.close();
+                
+                // 检查该位置是否有传送门
+                cursor = db.query("portal_locations", 
+                        new String[]{"COUNT(*)"}, 
+                        "x=? AND y=?", 
+                        new String[]{String.valueOf(currentX), String.valueOf(currentY)}, 
+                        null, null, null);
+                
+                if (cursor.moveToFirst()) {
+                    return cursor.getInt(0) > 0;
+                }
+            }
+        } catch (Exception e) {
+            Log.e("DBHelper", "检查传送门位置失败", e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 获取传送门目标位置
+     */
+    public String getPortalTarget(int userId, int currentX, int currentY) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query("portal_locations", 
+                    new String[]{"target_map", "target_x", "target_y"}, 
+                    "x=? AND y=?", 
+                    new String[]{String.valueOf(currentX), String.valueOf(currentY)}, 
+                    null, null, null);
+            
+            if (cursor.moveToFirst()) {
+                String targetMap = cursor.getString(0);
+                int targetX = cursor.getInt(1);
+                int targetY = cursor.getInt(2);
+                
+                return targetMap + "," + targetX + "," + targetY;
+            }
+        } catch (Exception e) {
+            Log.e("DBHelper", "获取传送门目标失败", e);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return null;
     }
 
 }

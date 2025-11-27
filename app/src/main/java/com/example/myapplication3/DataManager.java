@@ -115,27 +115,11 @@ public class DataManager {
             activity.stamina = getIntValue(userStatus.get("stamina"), Constant.INIT_STAMINA);
             activity.gold = getIntValue(userStatus.get("gold"), 0);
             activity.backpackCap = getIntValue(userStatus.get("backpack_cap"), 10);
-            // 关键修复：优先从SharedPreferences读取用户最新选择的难度
-            android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
-            String difficultyFromPrefs = sp.getString("difficulty", null);
-            
-            if (difficultyFromPrefs != null && !difficultyFromPrefs.isEmpty()) {
-                // 如果SharedPreferences中有难度设置，使用该设置并同步到数据库
-                activity.difficulty = difficultyFromPrefs;
-                Log.d("GameLoading", "从SharedPreferences读取难度: " + difficultyFromPrefs);
-                
-                // 同步更新数据库中的难度，确保一致性
-                Map<String, Object> difficultyUpdate = new HashMap<>();
-                difficultyUpdate.put("difficulty", difficultyFromPrefs);
-                dbHelper.updateUserStatus(MyApplication.currentUserId, difficultyUpdate);
-                Log.d("GameLoading", "已同步数据库难度为: " + difficultyFromPrefs);
-            } else {
-                // 如果SharedPreferences中没有设置，才从数据库加载
-                activity.difficulty = (String) userStatus.getOrDefault("difficulty", Constant.DIFFICULTY_NORMAL);
-                Log.d("GameLoading", "从数据库加载的难度: " + activity.difficulty);
-            }
+            // 加载难度设置，如果不存在则使用默认值
+            activity.difficulty = (String) userStatus.getOrDefault("difficulty", Constant.DIFFICULTY_NORMAL);
             
             // 添加日志显示当前游戏难度
+            Log.d("GameLoading", "从数据库加载的难度: " + activity.difficulty);
             Log.d("GameLoading", "当前游戏难度: " + activity.difficulty);
             activity.firstCollectTime = getLongValue(userStatus.get("first_collect_time"), 0);
 

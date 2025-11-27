@@ -12,6 +12,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
+import java.lang.ref.WeakReference;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -29,42 +31,65 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // 检查是否已登录（只有在记住我的情况下才自动登录）
-        SharedPreferences sp = getSharedPreferences("user_info", MODE_PRIVATE);
-        int userId = sp.getInt("user_id", -1);
-        boolean isRemembered = sp.getBoolean("is_remembered", false);
-
-        if (userId != -1 && isRemembered) {
-            MyApplication.currentUserId = userId;
-            
-            // 检查游戏状态，如果游戏已开始且未结束，直接进入游戏
-            GameStateManager gameStateManager = GameStateManager.getInstance(this);
-            gameStateManager.setCurrentUserId(userId);
-            
-            if (gameStateManager.isGameStarted() && !gameStateManager.isGameEnded()) {
-                // 游戏进行中，直接进入游戏
-                startActivity(new Intent(this, MainActivity.class));
-                finish();
-                return;
-            } else {
-                // 游戏未开始或已结束，进入标题页
-                startActivity(new Intent(this, TitleActivity.class));
-                finish();
-                return;
-            }
-        }
-
         setContentView(R.layout.activity_login);
 
+        // 初始化数据库
         dbHelper = DBHelper.getInstance(this);
+
+        // 初始化视图
         etUsername = findViewById(R.id.et_username);
         etPassword = findViewById(R.id.et_password);
         btnLoginRegister = findViewById(R.id.btn_login_register);
-        cbRememberMe = findViewById(R.id.cb_remember_me); // 初始化复选框
+        cbRememberMe = findViewById(R.id.cb_remember_me);
 
+        // 设置点击事件
         btnLoginRegister.setOnClickListener(v -> handleLoginOrRegister());
+
+        // 自动填充上次登录的用户名
+        SharedPreferences sharedPreferences = getSharedPreferences("user_info", Context.MODE_PRIVATE);
+        String lastUsername = sharedPreferences.getString("username", "");
+        if (!lastUsername.isEmpty()) {
+            etUsername.setText(lastUsername);
+            cbRememberMe.setChecked(true);
+        }
+
+        // 检查自动登录（非强制，仅作为快速登录选项）
+        int rememberedUserId = sharedPreferences.getInt("user_id", -1);
+        if (rememberedUserId != -1 && !isFinishing() && !isDestroyed()) {
+            // 自动登录处理
+            Log.d("LoginActivity", "检测到记住的用户ID: " + rememberedUserId + "，尝试自动登录");
+            
+            // 保存用户ID到应用全局变量
+            MyApplication.currentUserId = rememberedUserId;
+            GameStateManager.getInstance(this).setCurrentUserId(rememberedUserId);
+            
+            // 使用FLAG_ACTIVITY_CLEAR_TASK和FLAG_ACTIVITY_NEW_TASK确保不会出现多个任务栈
+            Intent intent;
+            if (rememberedUserId == MyApplication.TEST_ACCOUNT_UID) {
+                // 测试账号直接进入标题页
+                intent = new Intent(LoginActivity.this, TitleActivity.class);
+            } else {
+                // 普通账号检查游戏状态
+                GameStateManager gameStateManager = GameStateManager.getInstance(this);
+                if (gameStateManager.isGameStarted() && !gameStateManager.isGameEnded()) {
+                    // 游戏进行中，直接进入游戏
+                    intent = new Intent(LoginActivity.this, MainActivity.class);
+                } else {
+                    // 游戏未开始或已结束，进入标题页
+                    intent = new Intent(LoginActivity.this, TitleActivity.class);
+                }
+            }
+            
+            // 设置Intent标志，清除当前任务栈并创建新任务
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish(); // 确保LoginActivity被销毁
+            return; // 不再执行后续代码
+        }
     }
+
+    // 定义一个静态成员变量来保存当前运行的AsyncTask
+    private LoginAsyncTask loginAsyncTask;
 
     // 处理登录或注册逻辑
     private void handleLoginOrRegister() {
@@ -86,112 +111,201 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         String encryptedPassword = encryptPassword(password);
-        final String finalUsername = username;
-        final String finalEncryptedPassword = encryptedPassword;
-
-        // 数据库操作移至子线程
-        new AsyncTask<Void, Void, Integer>() {
-            private String resultMsg;
-
-            @Override
-            protected Integer doInBackground(Void... voids) {
-                // 检查用户是否存在（数据库操作）
-                int userId = dbHelper.checkUserExists(finalUsername);
-                if (userId != -1) {
-                    // 执行登录逻辑
-                    int loginUserId = dbHelper.login(finalUsername, finalEncryptedPassword);
-                    if (loginUserId != -1) {
-                        // 如果是admin账号，返回特殊UID -100
-                        if ("admin".equals(finalUsername)) {
-                            Log.d("LoginActivity", "检测到admin账号登录，使用特殊UID: " + MyApplication.TEST_ACCOUNT_UID);
-                            return MyApplication.TEST_ACCOUNT_UID;
-                        }
-                        return loginUserId; // 登录成功，返回用户ID
-                    } else {
-                        resultMsg = "密码错误";
-                        return -1;
-                    }
-                } else {
-                    // 执行注册逻辑
-                    boolean registerSuccess = dbHelper.register(finalUsername, finalEncryptedPassword);
-                    if (registerSuccess) {
-                        int newUserId = dbHelper.login(finalUsername, finalEncryptedPassword);
-                        if (newUserId != -1) {
-                            return newUserId; // 注册并登录成功
-                        } else {
-                            resultMsg = "注册成功，但登录失败";
-                            return -1;
-                        }
-                    } else {
-                        resultMsg = "注册失败";
-                        return -1;
-                    }
-                }
-            }
-
-            @Override
-            protected void onPostExecute(Integer result) {
-                if (result != -1) {
-                    handleLoginSuccess(result); // 主线程处理登录成功逻辑
-                } else {
-                    Toast.makeText(LoginActivity.this, resultMsg, Toast.LENGTH_SHORT).show();
-                }
-            }
-        }.execute();
+        
+        // 取消之前可能还在运行的任务
+        if (loginAsyncTask != null) {
+            loginAsyncTask.cancel(true);
+        }
+        
+        // 创建并执行新的AsyncTask
+        loginAsyncTask = new LoginAsyncTask(this, username, encryptedPassword);
+        loginAsyncTask.execute();
     }
 
-    // 登录成功处理
-    private void handleLoginSuccess(int userId) {
-        MyApplication.currentUserId = userId;
-        
-        // 新增：同步游戏状态管理器中的用户ID
-        GameStateManager gameStateManager = GameStateManager.getInstance(this);
-        gameStateManager.setCurrentUserId(userId);
-        // 首次登录时游戏状态为未开始，只有在标题页点击"开始游戏"后才开始
-        gameStateManager.setGameStarted(false);
+    // 将AsyncTask改为静态内部类，避免内存泄漏
+    private static class LoginAsyncTask extends AsyncTask<Void, Void, Integer> {
+        // 使用WeakReference持有Activity引用，防止内存泄漏
+        private WeakReference<LoginActivity> activityRef;
+        private String username;
+        private String encryptedPassword;
+        private String resultMsg;
+        private DBHelper dbHelper;
 
-        // 新增：检查是否为测试账号，如果是则初始化特权数据
-        boolean isTest = dbHelper.isTestAccount(userId);
-        Log.d("LoginActivity", "handleLoginSuccess: 用户 " + userId + " 是否为测试账号 = " + isTest);
-        
-        if (isTest) {
-            Log.d("LoginActivity", "handleLoginSuccess: 开始初始化测试账号 " + userId + " 的特权数据");
-            dbHelper.reinitTestAccountData(userId);
+        public LoginAsyncTask(LoginActivity activity, String username, String encryptedPassword) {
+            this.activityRef = new WeakReference<>(activity);
+            this.username = username;
+            this.encryptedPassword = encryptedPassword;
+            // 获取DBHelper实例（单例模式，不会造成内存泄漏）
+            if (activity != null) {
+                this.dbHelper = DBHelper.getInstance(activity.getApplicationContext());
+            }
+        }
+
+        @Override
+        protected Integer doInBackground(Void... voids) {
+            // 检查是否已取消
+            if (isCancelled()) {
+                return -1;
+            }
             
-            // 验证特权数据是否应用成功
-            Map<String, Object> status = dbHelper.getUserStatus(userId);
-            Integer backpackCap = (Integer) status.get("backpack_cap");
-            Integer hopePoints = (Integer) status.get("hope_points");
-            Integer gold = (Integer) status.get("gold");
-            Log.d("LoginActivity", "handleLoginSuccess: 特权数据验证 - 背包容量=" + backpackCap + ", 希望点数=" + hopePoints + ", 金币=" + gold);
+            // 检查用户是否存在（数据库操作）
+            int userId = dbHelper.checkUserExists(username);
+            if (userId != -1) {
+                // 检查是否已取消
+                if (isCancelled()) {
+                    return -1;
+                }
+                
+                // 执行登录逻辑
+                int loginUserId = dbHelper.login(username, encryptedPassword);
+                if (loginUserId != -1) {
+                    // 如果是admin账号，返回特殊UID -100
+                    if ("admin".equals(username)) {
+                        Log.d("LoginActivity", "检测到admin账号登录，使用特殊UID: " + MyApplication.TEST_ACCOUNT_UID);
+                        return MyApplication.TEST_ACCOUNT_UID;
+                    }
+                    return loginUserId; // 登录成功，返回用户ID
+                } else {
+                    resultMsg = "密码错误";
+                    return -1;
+                }
+            } else {
+                // 检查是否已取消
+                if (isCancelled()) {
+                    return -1;
+                }
+                
+                // 执行注册逻辑
+                boolean registerSuccess = dbHelper.register(username, encryptedPassword);
+                if (registerSuccess) {
+                    int newUserId = dbHelper.login(username, encryptedPassword);
+                    if (newUserId != -1) {
+                        return newUserId; // 注册并登录成功
+                    } else {
+                        resultMsg = "注册成功，但登录失败";
+                        return -1;
+                    }
+                } else {
+                    resultMsg = "注册失败";
+                    return -1;
+                }
+            }
         }
 
-        // 新增：检查是否为新用户（首次注册），若是则初始化坐标
-        boolean isNewUser = dbHelper.isNewUser(userId); // 需要在DBHelper中实现该方法
-        if (isNewUser) {
-            // 生成随机合法坐标（复用MainActivity的chooseRandomSpawnPoint逻辑）
-            int[] spawnPoint = chooseRandomSpawnPoint();
-            // 初始化数据库中的坐标
-            dbHelper.initUserCoordinates(userId, spawnPoint[0], spawnPoint[1]);
+        @Override
+        protected void onPostExecute(Integer result) {
+            // 获取Activity引用，并检查是否还存在
+            LoginActivity activity = activityRef.get();
+            if (activity == null || activity.isFinishing() || activity.isDestroyed()) {
+                Log.d("LoginActivity", "Activity已不存在，取消回调处理");
+                return;
+            }
+            
+            // 清除任务引用
+            activity.loginAsyncTask = null;
+            
+            if (result != -1) {
+                activity.handleLoginSuccess(result); // 主线程处理登录成功逻辑
+            } else {
+                Toast.makeText(activity, resultMsg, Toast.LENGTH_SHORT).show();
+            }
         }
+    }
 
-        // 根据记住我选项决定是否保存登录状态
-        SharedPreferences.Editor editor = getSharedPreferences("user_info", MODE_PRIVATE).edit();
-        editor.putInt("user_id", userId);
-        editor.putBoolean("is_remembered", cbRememberMe.isChecked());
-        editor.apply();
-
-        // 检查游戏状态，如果游戏已开始且未结束，直接进入游戏
-        if (gameStateManager.isGameStarted() && !gameStateManager.isGameEnded()) {
-            // 游戏进行中，直接进入游戏
-            startActivity(new Intent(this, MainActivity.class));
-        } else {
-            // 游戏未开始或已结束，进入标题页
-            startActivity(new Intent(this, TitleActivity.class));
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        
+        // 重要：取消可能正在运行的异步任务
+        if (loginAsyncTask != null) {
+            loginAsyncTask.cancel(true);
+            loginAsyncTask = null;
         }
         
-        finish();
-        Toast.makeText(this, "感谢游玩小厨娘的小游戏", Toast.LENGTH_SHORT).show();
+        // 清理引用，避免内存泄漏
+        etUsername = null;
+        etPassword = null;
+        btnLoginRegister = null;
+        cbRememberMe = null;
+        
+        Log.d("LoginActivity", "onDestroy: 资源已清理");
+    }
+
+    // 处理登录成功逻辑
+    private void handleLoginSuccess(int userId) {
+        // 检查Activity状态，确保在有效状态下执行操作
+        if (isFinishing() || isDestroyed()) {
+            Log.e("LoginActivity", "handleLoginSuccess: Activity已销毁，取消操作");
+            return;
+        }
+        
+        // 保存用户ID到应用全局变量和GameStateManager
+        MyApplication.currentUserId = userId;
+        GameStateManager.getInstance(this).setCurrentUserId(userId);
+        
+        // 处理记住登录状态
+        if (cbRememberMe.isChecked()) {
+            // 检查Activity状态
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            
+            // 保存登录信息到SharedPreferences
+            SharedPreferences sharedPreferences = getSharedPreferences("user_info", Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putInt("user_id", userId);
+            editor.putString("username", etUsername.getText().toString());
+            editor.apply();
+        }
+        
+        // 检查Activity状态
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+        
+        // 创建Intent并设置合适的标志
+        Intent intent;
+        
+        // 测试账号特殊处理
+        if (userId == MyApplication.TEST_ACCOUNT_UID) {
+            Toast.makeText(this, "管理员账号登录成功", Toast.LENGTH_SHORT).show();
+            intent = new Intent(LoginActivity.this, TitleActivity.class);
+        } else {
+            Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show();
+            
+            // 生成随机出生点（非测试账号）
+            int[] spawnPoint = chooseRandomSpawnPoint();
+            
+            // 检查Activity状态
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            
+            // 设置游戏开始状态
+            GameStateManager gameStateManager = GameStateManager.getInstance(this);
+            gameStateManager.setGameStarted(true);
+            gameStateManager.setCurrentUserId(userId);
+            
+            // 检查Activity状态
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+            
+            // 跳转到MainActivity并传递出生点坐标
+            intent = new Intent(LoginActivity.this, MainActivity.class);
+            intent.putExtra("SPAWN_X", spawnPoint[0]);
+            intent.putExtra("SPAWN_Y", spawnPoint[1]);
+        }
+        
+        // 重要：设置Intent标志，清除当前任务栈并创建新任务
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        
+        // 检查Activity状态
+        if (!isFinishing() && !isDestroyed()) {
+            startActivity(intent);
+            // 重要：确保在startActivity后立即调用finish()
+            finish();
+        }
     }
 
 //    private String encryptPassword(String password) {

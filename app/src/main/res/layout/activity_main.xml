@@ -176,17 +176,34 @@
             android:layout_weight="1"/>
 
         <!-- 任务显示框按钮（左上角） -->
-        <Button
-            android:id="@+id/btn_quest_panel"
-            android:layout_width="120dp"
-            android:layout_height="40dp"
-            android:layout_margin="8dp"
-            android:text="任务列表"
-            android:textColor="@android:color/white"
-            android:textSize="12sp"
-            android:background="@drawable/quest_panel_background"
-            android:gravity="center"
-            android:layout_gravity="start|top" />
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|top"
+            android:layout_margin="8dp">
+            
+            <Button
+                android:id="@+id/btn_quest_panel"
+                android:layout_width="120dp"
+                android:layout_height="40dp"
+                android:text="任务列表"
+                android:textColor="@android:color/white"
+                android:textSize="12sp"
+                android:background="@drawable/quest_panel_background"
+                android:gravity="center" />
+            
+            <!-- 任务红点提示 -->
+            <View
+                android:id="@+id/quest_red_dot"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_gravity="end|top"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/quest_red_dot_background"
+                android:visibility="gone" />
+                
+        </FrameLayout>
 
 
         <ScrollView
@@ -197,14 +214,34 @@
             android:background="@drawable/transparent_round_bg"
             android:padding="10dp">
 
-            <TextView
-                android:id="@+id/tv_area_description"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp"
-                android:shadowColor="#000000"/>
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_area_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="4dp"
+                    android:shadowColor="#000000"/>
+
+                <!-- 背包显示区域 -->
+                <TextView
+                    android:id="@+id/tv_backpack_display"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:background="#80000000"
+                    android:padding="6dp"
+                    android:maxLines="3"
+                    android:ellipsize="end"
+                    android:visibility="gone"/>
+            </LinearLayout>
         </ScrollView>
         <LinearLayout
             android:layout_width="match_parent"

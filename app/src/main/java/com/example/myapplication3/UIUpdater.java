@@ -41,6 +41,8 @@ public class UIUpdater {
         activity.ivClock = activity.findViewById(R.id.iv_clock);
         activity.ivThermometer = activity.findViewById(R.id.iv_thermometer);
         activity.tvEquipStatus = activity.findViewById(R.id.tv_equip_status);
+        activity.tvBackpackDisplay = activity.findViewById(R.id.tv_backpack_display);
+        activity.btnCollect = activity.findViewById(R.id.btn_collect);
         activity.scrollView = activity.findViewById(R.id.scrollView);
     }
 
@@ -269,5 +271,60 @@ public class UIUpdater {
                 }
             }
         }
+    }
+
+    /**
+     * 更新背包显示
+     */
+    public void updateBackpackDisplay() {
+        if (activity == null || activity.dataManager == null) {
+            return;
+        }
+
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // 获取背包数据
+                    Map<String, Integer> backpack = activity.dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
+                    
+                    if (backpack == null || backpack.isEmpty()) {
+                        // 背包为空时的处理
+                        if (activity.tvBackpackDisplay != null) {
+                            activity.tvBackpackDisplay.setText("背包为空");
+                        }
+                        return;
+                    }
+
+                    // 构建背包显示文本
+                    StringBuilder displayText = new StringBuilder();
+                    displayText.append("背包物品：\n");
+                    
+                    // 显示前几个物品，避免显示过长
+                    int itemCount = 0;
+                    for (Map.Entry<String, Integer> entry : backpack.entrySet()) {
+                        if (itemCount >= 5) { // 只显示前5个物品
+                            break;
+                        }
+                        displayText.append(entry.getKey()).append(" ×").append(entry.getValue()).append("\n");
+                        itemCount++;
+                    }
+                    
+                    if (backpack.size() > 5) {
+                        displayText.append("... 还有 ").append(backpack.size() - 5).append(" 种物品");
+                    }
+
+                    // 更新显示
+                    if (activity.tvBackpackDisplay != null) {
+                        activity.tvBackpackDisplay.setText(displayText.toString());
+                    }
+                    
+                    Log.d("UIUpdater", "背包显示已更新，物品数量：" + backpack.size());
+                    
+                } catch (Exception e) {
+                    Log.e("UIUpdater", "更新背包显示失败", e);
+                }
+            }
+        });
     }
 }

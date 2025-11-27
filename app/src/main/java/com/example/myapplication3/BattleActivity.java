@@ -949,9 +949,12 @@ public class BattleActivity extends AppCompatActivity {
     private void showWildBattleResultDialog(boolean isVictory) {
         String animalName = wildAnimal != null ? wildAnimal.getName() : "未知动物";
 
+        // 确定动物大小
+        String animalSize = determineAnimalSize(animalName);
+        
         WildBattleResultDialogFragment dialog =
             WildBattleResultDialogFragment.newInstance(isVictory, animalName,
-                terrainType, originalX, originalY, this);
+                terrainType, animalSize, originalX, originalY);
 
         dialog.setOnResultDialogListener(new WildBattleResultDialogFragment.OnResultDialogListener() {
             @Override
@@ -1465,5 +1468,35 @@ public class BattleActivity extends AppCompatActivity {
     public void onBackPressed() {
         super.onBackPressed();
         handleBackPressed();
+    }
+    
+    /**
+     * 根据动物名称确定动物大小
+     */
+    private String determineAnimalSize(String animalName) {
+        if (animalName == null) return "小型";
+        
+        // 小型动物
+        if (animalName.equals("野兔") || animalName.equals("小猪") || 
+            animalName.equals("山羊") || animalName.equals("野鸡") || 
+            animalName.equals("蛇") || animalName.equals("食人鱼")) {
+            return "小型";
+        }
+        
+        // 中型动物
+        if (animalName.equals("狼") || animalName.equals("鹿") || 
+            animalName.equals("野猪") || animalName.equals("猴子")) {
+            return "中型";
+        }
+        
+        // 大型动物
+        if (animalName.equals("老虎") || animalName.equals("狮子") || 
+            animalName.equals("熊") || animalName.equals("猎豹") || 
+            animalName.equals("鲨鱼")) {
+            return "大型";
+        }
+        
+        // 默认为小型
+        return "小型";
     }
 }

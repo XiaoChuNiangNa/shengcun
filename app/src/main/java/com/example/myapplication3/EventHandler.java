@@ -2,49 +2,101 @@ package com.example.myapplication3;
 
 import android.app.AlertDialog;
 import android.content.Intent;
-import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class EventHandler implements View.OnClickListener {
-    private final MainActivity activity;
+    // 使用WeakReference防止内存泄漏
+    private final WeakReference<MainActivity> activityRef;
     private Runnable cdRefreshRunnable;
+    private final Random random;
+
+    // 替代AsyncTask的执行器和Handler
+    private final ExecutorService executorService;
+    private final Handler mainHandler;
 
     public EventHandler(MainActivity activity) {
-        this.activity = activity;
+        this.activityRef = new WeakReference<>(activity);
+        this.random = new Random();
+
+        // 初始化线程池和主线程Handler
+        this.executorService = Executors.newFixedThreadPool(4);
+        this.mainHandler = new Handler(Looper.getMainLooper());
+    }
+
+    /**
+     * 获取MainActivity实例，如果活动已销毁则返回null
+     */
+    private MainActivity getActivity() {
+        return activityRef.get();
     }
 
     // 初始化点击监听
     public void initClickListeners() {
-        activity.findViewById(R.id.btn_collect).setOnClickListener(this);
-        activity.findViewById(R.id.btn_up).setOnClickListener(v -> move(0, -1));
-        activity.findViewById(R.id.btn_down).setOnClickListener(v -> move(0, 1));
-        activity.findViewById(R.id.btn_left).setOnClickListener(v -> move(-1, 0));
-        activity.findViewById(R.id.btn_right).setOnClickListener(v -> move(1, 0));
-        activity.ivSetting.setOnClickListener(v -> new SettingDialogFragment().show(activity.getSupportFragmentManager(), "setting_dialog"));
-        activity.btnBackpack.setOnClickListener(this);
-        activity.btnEquipment.setOnClickListener(this);
-        activity.btnFunctions.setOnClickListener(this);
-        activity.findViewById(R.id.btn_quest_panel).setOnClickListener(this);
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
+        try {
+            // 确保btnCollect字段被初始化（解决可能的符号解析问题）
+            activity.btnCollect = activity.findViewById(R.id.btn_collect);
+            
+            View btnCollect = activity.findViewById(R.id.btn_collect);
+            View btnUp = activity.findViewById(R.id.btn_up);
+            View btnDown = activity.findViewById(R.id.btn_down);
+            View btnLeft = activity.findViewById(R.id.btn_left);
+            View btnRight = activity.findViewById(R.id.btn_right);
+            View btnQuestPanel = activity.findViewById(R.id.btn_quest_panel);
+
+            if (btnCollect != null) btnCollect.setOnClickListener(this);
+            if (btnUp != null) btnUp.setOnClickListener(v -> move(0, -1));
+            if (btnDown != null) btnDown.setOnClickListener(v -> move(0, 1));
+            if (btnLeft != null) btnLeft.setOnClickListener(v -> move(-1, 0));
+            if (btnRight != null) btnRight.setOnClickListener(v -> move(1, 0));
+            if (activity.ivSetting != null) activity.ivSetting.setOnClickListener(v -> {
+                MainActivity currentActivity = getActivity();
+                if (currentActivity != null) {
+                    new SettingDialogFragment().show(currentActivity.getSupportFragmentManager(), "setting_dialog");
+                }
+            });
+            if (activity.btnBackpack != null) activity.btnBackpack.setOnClickListener(this);
+            if (activity.btnEquipment != null) activity.btnEquipment.setOnClickListener(this);
+            if (activity.btnFunctions != null) activity.btnFunctions.setOnClickListener(this);
+            if (btnQuestPanel != null) btnQuestPanel.setOnClickListener(this);
+        } catch (Exception e) {
+            Log.e("EventHandler", "初始化点击监听器失败: " + e.getMessage(), e);
+        }
     }
 
     // 移动处理
     public void move(int dx, int dy) {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
         int newX = activity.currentX + dx;
         int newY = activity.currentY + dy;
 
         // 边界检查
         if (newX < Constant.MAP_MIN || newX > Constant.MAP_MAX || newY < Constant.MAP_MIN || newY > Constant.MAP_MAX) {
-            // 详细日志提示边界检查
             Log.w("MoveDebug", "地图边界限制 - 当前位置(" + activity.currentX + "," + activity.currentY + "), 目标位置(" + newX + "," + newY + ")超出地图边界(" + Constant.MAP_MIN + "-" + Constant.MAP_MAX + ")");
-            activity.tvAreaDescription.setText("已到达地图边界");
+            if (activity.tvAreaDescription != null) {
+                activity.tvAreaDescription.setText("已到达地图边界");
+            }
             return;
         }
 
@@ -55,7 +107,6 @@ public class EventHandler implements View.OnClickListener {
         Constant.AreaConfig cfgTo = Constant.AREA_CONFIG.get(toArea);
 
         if (cfgFrom == null || cfgTo == null) {
-            // 详细日志提示未知区域原因
             StringBuilder logMsg = new StringBuilder("未知区域无法移动 - 详细信息: ");
             logMsg.append("当前位置(").append(activity.currentX).append(",").append(activity.currentY).append(")地形: ").append(fromArea);
             logMsg.append(", 目标位置(").append(newX).append(",").append(newY).append(")地形: ").append(toArea);
@@ -68,7 +119,9 @@ public class EventHandler implements View.OnClickListener {
             }
 
             Log.w("MoveDebug", logMsg.toString());
-            activity.tvAreaDescription.setText("未知区域，无法移动");
+            if (activity.tvAreaDescription != null) {
+                activity.tvAreaDescription.setText("未知区域，无法移动");
+            }
             return;
         }
 
@@ -77,10 +130,11 @@ public class EventHandler implements View.OnClickListener {
         int toHeight = activity.gameMap.getTerrainHeight(newX, newY);
         int deltaHeight = Math.abs(toHeight - fromHeight);
         if (deltaHeight > 1) {
-            // 详细日志提示高度差限制
             Log.w("MoveDebug", "高度差过大无法移动 - 当前位置(" + activity.currentX + "," + activity.currentY + ")高度: " + fromHeight +
                     ", 目标位置(" + newX + "," + newY + ")高度: " + toHeight + ", 高度差: " + deltaHeight + " (最大允许: 1)");
-            activity.tvAreaDescription.setText("高度差过大，无法移动");
+            if (activity.tvAreaDescription != null) {
+                activity.tvAreaDescription.setText("高度差过大，无法移动");
+            }
             return;
         }
 
@@ -89,18 +143,23 @@ public class EventHandler implements View.OnClickListener {
         if (activity.stamina < staminaCost) {
             int lifeCost = staminaCost - activity.stamina;
             if (activity.life < lifeCost) {
-                // 详细日志提示生命不足
                 Log.w("MoveDebug", "生命不足无法移动 - 当前位置(" + activity.currentX + "," + activity.currentY + "), 目标位置(" + newX + "," + newY +
                         "), 体力需求: " + staminaCost + ", 当前体力: " + activity.stamina + ", 生命需求: " + lifeCost + ", 当前生命: " + activity.life);
-                activity.tvAreaDescription.setText("生命不足，无法移动");
+                if (activity.tvAreaDescription != null) {
+                    activity.tvAreaDescription.setText("生命不足，无法移动");
+                }
                 return;
             }
             activity.life = Math.max(0, activity.life - lifeCost);
             activity.stamina = 0;
-            activity.tvAreaDescription.setText("体力不足，移动消耗 " + lifeCost + " 点生命");
+            if (activity.tvAreaDescription != null) {
+                activity.tvAreaDescription.setText("体力不足，移动消耗 " + lifeCost + " 点生命");
+            }
         } else {
             activity.stamina -= staminaCost;
-            activity.tvAreaDescription.setText("");
+            if (activity.tvAreaDescription != null) {
+                activity.tvAreaDescription.setText("");
+            }
         }
 
         // 难度系统：移动额外消耗
@@ -108,19 +167,23 @@ public class EventHandler implements View.OnClickListener {
         Map<String, Integer> moveCosts = difficultyManager.getMoveCost(activity.difficulty);
 
         // 基础消耗 + 难度额外消耗
-        activity.hunger = Math.max(0, activity.hunger - 5 - moveCosts.get("hunger"));
-        activity.thirst = Math.max(0, activity.thirst - 5 - moveCosts.get("thirst"));
-        activity.stamina = Math.max(0, activity.stamina - moveCosts.get("stamina"));
+        activity.hunger = Math.max(0, activity.hunger - 5 - moveCosts.getOrDefault("hunger", 0));
+        activity.thirst = Math.max(0, activity.thirst - 5 - moveCosts.getOrDefault("thirst", 0));
+        activity.stamina = Math.max(0, activity.stamina - moveCosts.getOrDefault("stamina", 0));
 
         // 特殊地形消耗
         if (toArea.equals("海洋")) {
             activity.stamina = Math.max(0, activity.stamina - 5);
             activity.hunger = Math.max(0, activity.hunger - 5);
-            activity.tvAreaDescription.append("，游泳额外消耗5体力和5饥饿");
+            if (activity.tvAreaDescription != null) {
+                activity.tvAreaDescription.append("，游泳额外消耗5体力和5饥饿");
+            }
         } else if (toArea.equals("深海")) {
             activity.stamina = Math.max(0, activity.stamina - 10);
             activity.hunger = Math.max(0, activity.hunger - 10);
-            activity.tvAreaDescription.append("，深海游泳额外消耗10体力和10饥饿");
+            if (activity.tvAreaDescription != null) {
+                activity.tvAreaDescription.append("，深海游泳额外消耗10体力和10饥饿");
+            }
         }
 
         // 体温变化
@@ -130,12 +193,13 @@ public class EventHandler implements View.OnClickListener {
 
         if (tempChange != 0) {
             activity.temperature = Math.max(Constant.TEMPERATURE_MIN, activity.temperature + tempChange);
-            activity.uiUpdater.updateTemperatureDisplay();
+            if (activity.uiUpdater != null) {
+                activity.uiUpdater.updateTemperatureDisplay();
+            }
         }
 
         // 高度差1时绳索检查
         if (deltaHeight == 1) {
-            // 使用MainActivity中的背包数据，而不是从数据库获取
             boolean hasRope = false;
             String ropeType = "";
 
@@ -153,25 +217,27 @@ public class EventHandler implements View.OnClickListener {
             }
 
             if (!hasRope) {
-                // 详细日志提示绳索需求
                 Log.w("MoveDebug", "需要绳索才能移动 - 当前位置(" + activity.currentX + "," + activity.currentY + ")高度: " + fromHeight +
                         ", 目标位置(" + newX + "," + newY + ")高度: " + toHeight + ", 高度差: " + deltaHeight +
                         ", 背包中无可用绳索");
-                activity.tvAreaDescription.setText("需要绳索才能移动到该区域");
+                if (activity.tvAreaDescription != null) {
+                    activity.tvAreaDescription.setText("需要绳索才能移动到该区域");
+                }
                 return;
             } else {
-                // 详细日志提示绳索使用
                 Log.i("MoveDebug", "使用绳索移动 - 当前位置(" + activity.currentX + "," + activity.currentY + ")高度: " + fromHeight +
                         ", 目标位置(" + newX + "," + newY + ")高度: " + toHeight + ", 高度差: " + deltaHeight +
                         ", 使用绳索: " + ropeType);
                 // 更新数据库和内存中的背包数据
-                activity.dataManager.getDbHelper().updateBackpackItem(MyApplication.currentUserId, ropeType, -1);
+                if (activity.dataManager != null && activity.dataManager.getDbHelper() != null) {
+                    activity.dataManager.getDbHelper().updateBackpackItem(MyApplication.currentUserId, ropeType, -1);
 
-                // 同步更新内存中的背包数据
-                if (activity.backpack.containsKey(ropeType)) {
-                    int currentCount = activity.backpack.get(ropeType);
-                    if (currentCount > 0) {
-                        activity.backpack.put(ropeType, currentCount - 1);
+                    // 同步更新内存中的背包数据
+                    if (activity.backpack.containsKey(ropeType)) {
+                        int currentCount = activity.backpack.get(ropeType);
+                        if (currentCount > 0) {
+                            activity.backpack.put(ropeType, currentCount - 1);
+                        }
                     }
                 }
             }
@@ -180,7 +246,9 @@ public class EventHandler implements View.OnClickListener {
         // 执行移动
         activity.currentX = newX;
         activity.currentY = newY;
-        activity.backgroundView.setCurrentCoord(activity.currentX, activity.currentY);
+        if (activity.backgroundView != null) {
+            activity.backgroundView.setCurrentCoord(activity.currentX, activity.currentY);
+        }
 
         // 处理移动随机事件
         RandomEventManager.RandomEvent moveEvent = RandomEventManager.handleMoveEvent(MyApplication.currentUserId, toArea);
@@ -200,7 +268,9 @@ public class EventHandler implements View.OnClickListener {
                     activity.gameDay++;
                 }
 
-                activity.uiUpdater.updateTimeDisplay();
+                if (activity.uiUpdater != null) {
+                    activity.uiUpdater.updateTimeDisplay();
+                }
             }
         }
 
@@ -214,30 +284,69 @@ public class EventHandler implements View.OnClickListener {
         // 移动成功时增加游戏时间1小时
         increaseGameTimeAfterAction();
 
-        activity.dataManager.saveAllCriticalData();
-        activity.uiUpdater.updateAreaInfo();
-        activity.uiUpdater.updateStatusDisplays();
+        // 保存数据和更新UI
+        if (activity.dataManager != null) {
+            activity.dataManager.saveAllCriticalData();
+        }
+        if (activity.uiUpdater != null) {
+            activity.uiUpdater.updateAreaInfo();
+            activity.uiUpdater.updateStatusDisplays();
+        }
     }
 
     // 采集处理
     private void handleCollect() {
-        String areaType = activity.gameMap.getTerrainType(activity.currentX, activity.currentY);
+        MainActivity uiActivity = getActivity();
+        if (uiActivity == null) return;
 
-        // 检查是否遭遇野生动物（10%概率）
-        WildAnimalEncounterManager encounterManager = WildAnimalEncounterManager.getInstance();
-        if (encounterManager.checkForWildAnimalEncounter()) {
-            Log.d("WildAnimalEncounter", "在" + areaType + "遭遇野生动物");
-            encounterManager.handleWildAnimalEncounter(areaType, activity);
+        String areaType = uiActivity.gameMap.getTerrainType(uiActivity.currentX, uiActivity.currentY);
+
+        // 检查野生动物遭遇
+        if (checkWildAnimalEncounter(areaType)) {
             return; // 遭遇野生动物后不执行普通采集
         }
 
-        int currentAreaLevel = Constant.getAreaLevel(areaType);
-        TechManager techManager = TechManager.getInstance(activity);
-        Tech baseGathering = techManager.getTechById("base_gathering");
-        Tech wildGathering = techManager.getTechById("wild_gathering");
-        Tech advancedGathering = techManager.getTechById("advanced_gathering");
+        // 获取科技加成信息
+        List<String> bonusTips = getTechGatheringBonuses();
+
+        // 显示采集提示
+        displayGatheringTips(bonusTips);
+
+        // 执行实际采集
+        performCollect(areaType, bonusTips);
+    }
+
+    /**
+     * 检查是否遭遇野生动物
+     * @param areaType 当前区域类型
+     * @return 是否遭遇野生动物
+     */
+    private boolean checkWildAnimalEncounter(String areaType) {
+        MainActivity uiActivity = getActivity();
+        if (uiActivity == null) return false;
+
+        WildAnimalEncounterManager encounterManager = WildAnimalEncounterManager.getInstance();
+        if (encounterManager.checkForWildAnimalEncounter()) {
+            Log.d("WildAnimalEncounter", "在" + areaType + "遭遇野生动物");
+            encounterManager.handleWildAnimalEncounter(areaType, uiActivity);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 获取采集相关的科技加成
+     * @return 科技加成提示列表
+     */
+    private List<String> getTechGatheringBonuses() {
+        MainActivity uiActivity = getActivity();
+        if (uiActivity == null) return new ArrayList<>();
 
         List<String> bonusTips = new ArrayList<>();
+        TechManager techManager = TechManager.getInstance(uiActivity);
+
+        // 获取基础采集术加成
+        Tech baseGathering = techManager.getTechById("base_gathering");
         if (baseGathering != null && baseGathering.level > 0) {
             String[] baseBonuses = {"杂草、木头、石头", "浆果、苹果、橡果", "藤蔓、树脂、木炭"};
             int levelIndex = baseGathering.level - 1;
@@ -246,32 +355,60 @@ public class EventHandler implements View.OnClickListener {
             }
         }
 
+        // 获取荒野采集术加成
+        Tech wildGathering = techManager.getTechById("wild_gathering");
         if (wildGathering != null && wildGathering.level > 0) {
             bonusTips.add("荒野采集术 Lv" + wildGathering.level + "：额外获得" + wildGathering.level + "个资源");
         }
 
+        // 获取高级采集术加成
+        Tech advancedGathering = techManager.getTechById("advanced_gathering");
         if (advancedGathering != null && advancedGathering.level > 0) {
             bonusTips.add("高级采集术 Lv" + advancedGathering.level + "：额外获得" + advancedGathering.level + "个资源");
         }
 
-        if (!bonusTips.isEmpty()) {
-            activity.tvTip.setText("科技加成：\n" + String.join("\n", bonusTips));
-        } else {
-            activity.tvTip.setText("普通采集");
-        }
+        return bonusTips;
+    }
 
-        performCollect(areaType, bonusTips);
+    /**
+     * 显示采集提示信息
+     * @param bonusTips 科技加成提示列表
+     */
+    private void displayGatheringTips(List<String> bonusTips) {
+        MainActivity uiActivity = getActivity();
+        if (uiActivity == null) return;
+
+        if (uiActivity.tvTip != null) {
+            if (!bonusTips.isEmpty()) {
+                uiActivity.tvTip.setText("科技加成：\n" + String.join("\n", bonusTips));
+            } else {
+                uiActivity.tvTip.setText("普通采集");
+            }
+        }
     }
 
     // 执行采集
     private void performCollect(String areaType, List<String> bonusTipsList) {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
         AreaResourceManager.AreaResource areaResource = AreaResourceManager.getInstance().getAreaResource(areaType);
         if (areaResource == null) {
-            activity.tvScrollTip.setText("未知区域，无法采集");
+            if (activity.tvScrollTip != null) {
+                activity.tvScrollTip.setText("未知区域，无法采集");
+            }
             return;
         }
 
-        // 关键修改：通过getDbHelper()访问dbHelper
+        // 关键修改：通过getDbHelper()访问dbHelper，增加非空判断
+        if (activity.dataManager == null || activity.dataManager.getDbHelper() == null) {
+            Log.e("EventHandler", "数据管理器或数据库帮助类为空，无法执行采集");
+            if (activity.tvScrollTip != null) {
+                activity.tvScrollTip.setText("采集失败：数据初始化异常");
+            }
+            return;
+        }
+
         Map<String, Object> cdInfo = activity.dataManager.getDbHelper().getResourceCDInfo(MyApplication.currentUserId, activity.currentX, activity.currentY);
         int dbCollectCount = activity.dataManager.getIntValue(cdInfo.get("collect_count"), 0);
         long lastCollectTime = activity.dataManager.getLongValue(cdInfo.get("last_collect_time"), 0);
@@ -281,7 +418,9 @@ public class EventHandler implements View.OnClickListener {
             String msg = remainingCD > 0 ?
                     String.format("该区域采集次数已达上限，剩余冷却：%d分%d秒", remainingCD / 60000, (remainingCD % 60000) / 1000) :
                     "该区域采集次数已达上限，请等待刷新";
-            activity.tvScrollTip.setText(msg);
+            if (activity.tvScrollTip != null) {
+                activity.tvScrollTip.setText(msg);
+            }
             return;
         }
 
@@ -309,7 +448,9 @@ public class EventHandler implements View.OnClickListener {
         // 检查工具等级是否足够（新增等级匹配验证）
         if (!isToolLevelSufficient(activity.currentEquip, areaType)) {
             Log.d("ToolDebug", "工具等级不足: " + activity.currentEquip + " -> " + areaType);
-            activity.tvScrollTip.setText("工具等级不足，无法采集该区域");
+            if (activity.tvScrollTip != null) {
+                activity.tvScrollTip.setText("工具等级不足，无法采集该区域");
+            }
             return;
         }
 
@@ -317,13 +458,14 @@ public class EventHandler implements View.OnClickListener {
         boolean isToolTypeMatched = Constant.isToolSuitableForArea(activity.currentEquip, areaType);
         if (!isToolTypeMatched) {
             Log.d("ToolDebug", "工具类型不匹配: " + activity.currentEquip + " -> " + areaType + "（但允许采集，无加成）");
-            // 不阻止采集，只是没有加成
         } else {
             Log.d("ToolDebug", "工具类型匹配: " + activity.currentEquip + " -> " + areaType + "（有加成）");
         }
 
         if (activity.stamina < 3) {
-            activity.tvScrollTip.setText("体力不足，无法采集");
+            if (activity.tvScrollTip != null) {
+                activity.tvScrollTip.setText("体力不足，无法采集");
+            }
             return;
         }
 
@@ -331,22 +473,29 @@ public class EventHandler implements View.OnClickListener {
         int baseStaminaCost = 5;
         int finalStaminaCost = calculateStaminaCostWithBonuses(baseStaminaCost, bonusTipsList);
         activity.stamina = Math.max(0, activity.stamina - finalStaminaCost);
-        activity.uiUpdater.updateStatusDisplays();
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... voids) {
-                Map<String, Object> updates = new HashMap<>();
-                updates.put("stamina", activity.stamina);
-                // 关键修改：通过getDbHelper()访问dbHelper
-                activity.dataManager.getDbHelper().updateUserStatus(MyApplication.currentUserId, updates);
-                return null;
+
+        if (activity.uiUpdater != null) {
+            activity.uiUpdater.updateStatusDisplays();
+        }
+
+        final int newStamina = activity.stamina;
+        // 替换AsyncTask为ExecutorService
+        executorService.execute(() -> {
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("stamina", newStamina);
+            try {
+                MainActivity currentActivity = getActivity();
+                if (currentActivity != null && currentActivity.dataManager != null && currentActivity.dataManager.getDbHelper() != null) {
+                    currentActivity.dataManager.getDbHelper().updateUserStatus(MyApplication.currentUserId, updates);
+                }
+            } catch (Exception e) {
+                Log.e("EventHandler", "更新体力失败", e);
             }
-        }.execute();
+        });
 
         // 处理装备耐久和加成
         int toolBonus = 0;
         if (activity.currentEquip != null && !activity.currentEquip.isEmpty() && !activity.currentEquip.equals("无")) {
-            // 关键修改：通过getDbHelper()访问dbHelper
             int currentDurability = activity.dataManager.getDbHelper().getDurability(MyApplication.currentUserId, activity.currentEquip);
 
             // 只有工具类型匹配时才给予加成
@@ -358,32 +507,45 @@ public class EventHandler implements View.OnClickListener {
 
             if (currentDurability <= 0) {
                 Log.w("ToolDebug", "工具已损坏: " + activity.currentEquip + "，无法采集");
-                activity.runOnUiThread(() -> activity.tvScrollTip.setText(activity.currentEquip + "已损坏，无法采集"));
+                activity.runOnUiThread(() -> {
+                    if (activity.tvScrollTip != null) {
+                        activity.tvScrollTip.setText(activity.currentEquip + "已损坏，无法采集");
+                    }
+                });
                 return;
             }
 
             // 只有工具类型匹配且有实际加成时才消耗耐久度
             if (isToolTypeMatched && toolBonus > 0) {
                 // 立即更新耐久度，不等待异步任务
-                new AsyncTask<Void, Void, Boolean>() {
-                    @Override
-                    protected Boolean doInBackground(Void... voids) {
-                        // 直接调用useTool方法，确保耐久度正确减少
-                        activity.dataManager.getDbHelper().useTool(MyApplication.currentUserId, activity.currentEquip);
-                        return true;
-                    }
+                final String currentTool = activity.currentEquip;
+                // 替换AsyncTask为ExecutorService和Handler
+                executorService.execute(() -> {
+                    try {
+                        MainActivity currentActivity = getActivity();
+                        if (currentActivity != null && currentActivity.dataManager != null && currentActivity.dataManager.getDbHelper() != null) {
+                            // 直接调用useTool方法，确保耐久度正确减少
+                            currentActivity.dataManager.getDbHelper().useTool(MyApplication.currentUserId, currentTool);
 
-                    @Override
-                    protected void onPostExecute(Boolean success) {
-                        // 检查耐久度是否已耗尽
-                        int updatedDurability = activity.dataManager.getDbHelper().getDurability(MyApplication.currentUserId, activity.currentEquip);
-                        if (updatedDurability <= 0) {
-                            activity.currentEquip = "无";
-                            activity.dataManager.getDbHelper().updateToolEquipStatus(MyApplication.currentUserId, activity.currentEquip, false);
+                            // 在后台计算后，通过Handler更新UI
+                            final int updatedDurability = currentActivity.dataManager.getDbHelper().getDurability(MyApplication.currentUserId, currentTool);
+                            mainHandler.post(() -> {
+                                MainActivity uiActivity = getActivity();
+                                if (uiActivity != null) {
+                                    if (updatedDurability <= 0) {
+                                        uiActivity.currentEquip = "无";
+                                        uiActivity.dataManager.getDbHelper().updateToolEquipStatus(MyApplication.currentUserId, uiActivity.currentEquip, false);
+                                    }
+                                    if (uiActivity.uiUpdater != null) {
+                                        uiActivity.uiUpdater.refreshEquipStatus();
+                                    }
+                                }
+                            });
                         }
-                        activity.uiUpdater.refreshEquipStatus();
+                    } catch (Exception e) {
+                        Log.e("EventHandler", "更新工具耐久度失败", e);
                     }
-                }.execute();
+                });
             } else if (isToolTypeMatched && toolBonus == 0) {
                 Log.d("ToolDebug", "工具类型匹配但无加成，不消耗耐久度: " + activity.currentEquip + " -> " + areaType);
             } else {
@@ -432,7 +594,9 @@ public class EventHandler implements View.OnClickListener {
         }
 
         if (baseItems.isEmpty()) {
-            activity.tvScrollTip.setText(areaType + "没有可采集的物品");
+            if (activity.tvScrollTip != null) {
+                activity.tvScrollTip.setText(areaType + "没有可采集的物品");
+            }
             return;
         }
 
@@ -447,7 +611,9 @@ public class EventHandler implements View.OnClickListener {
         int backpackCapacity = activity.dataManager.getDbHelper().getBackpackCapacity(MyApplication.currentUserId);
 
         if (currentBackpackCount + totalItemsToAdd > backpackCapacity) {
-            activity.tvScrollTip.setText("背包容量不足，无法采集物品");
+            if (activity.tvScrollTip != null) {
+                activity.tvScrollTip.setText("背包容量不足，无法采集物品");
+            }
             Log.w("EventHandler", "背包容量不足！需要容量: " + (currentBackpackCount + totalItemsToAdd) + ", 当前容量: " + backpackCapacity);
             return;
         }
@@ -459,80 +625,98 @@ public class EventHandler implements View.OnClickListener {
         Map<String, Integer> backpackBefore = activity.dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
 
         // 保存到数据库
-        new AsyncTask<Void, Void, Integer>() {
-            @Override
-            protected Integer doInBackground(Void... voids) {
-                int newAreaCount = dbCollectCount + 1;
-                // 关键修改：通过getDbHelper()访问dbHelper
-                activity.dataManager.getDbHelper().updateAreaCollectCount(
-                        MyApplication.currentUserId, activity.currentX, activity.currentY, newAreaCount, System.currentTimeMillis()
-                );
-                // 关键修改：通过getDbHelper()访问dbHelper
-                int newGlobalCount = activity.dataManager.getDbHelper().incrementGlobalCollectTimes(MyApplication.currentUserId);
+        final List<AreaResourceManager.CollectedItem> itemsToSave = new ArrayList<>(allItems);
+        final int collectedX = activity.currentX;
+        final int collectedY = activity.currentY;
+        final int countToUpdate = dbCollectCount + 1;
 
-                // 增加寻宝探险次数
-                int newExplorationCount = activity.dataManager.getDbHelper().incrementExplorationTimes(MyApplication.currentUserId);
-
-                // 添加物品到背包
-                boolean allItemsAdded = true;
-                for (AreaResourceManager.CollectedItem item : allItems) {
+        // 替换AsyncTask为ExecutorService和Handler
+        executorService.execute(() -> {
+            Integer newGlobalCount = null;
+            int explorationCount = 0; // 初始化变量
+            try {
+                MainActivity currentActivity = getActivity();
+                if (currentActivity != null && currentActivity.dataManager != null && currentActivity.dataManager.getDbHelper() != null) {
                     // 关键修改：通过getDbHelper()访问dbHelper
-                    boolean success = activity.dataManager.getDbHelper().updateBackpackItem(MyApplication.currentUserId, item.name, item.count);
-                    if (!success) {
-                        Log.e("EventHandler", "添加物品到背包失败: " + item.name + " ×" + item.count);
-                        allItemsAdded = false;
+                    currentActivity.dataManager.getDbHelper().updateAreaCollectCount(
+                            MyApplication.currentUserId, collectedX, collectedY, countToUpdate, System.currentTimeMillis()
+                    );
+                    // 关键修改：通过getDbHelper()访问dbHelper
+                    newGlobalCount = currentActivity.dataManager.getDbHelper().incrementGlobalCollectTimes(MyApplication.currentUserId);
+
+                    // 增加寻宝探险次数
+                    currentActivity.dataManager.getDbHelper().incrementExplorationTimes(MyApplication.currentUserId);
+                    // 获取更新后的探险次数
+                    explorationCount = currentActivity.dataManager.getDbHelper().getExplorationTimes(MyApplication.currentUserId);
+
+                    // 添加物品到背包
+                    boolean allItemsAdded = true;
+                    for (AreaResourceManager.CollectedItem item : itemsToSave) {
+                        // 关键修改：通过getDbHelper()访问dbHelper
+                        boolean success = currentActivity.dataManager.getDbHelper().updateBackpackItem(MyApplication.currentUserId, item.name, item.count);
+                        if (!success) {
+                            Log.e("EventHandler", "添加物品到背包失败: " + item.name + " ×" + item.count);
+                            allItemsAdded = false;
+                        }
+                    }
+
+                    if (!allItemsAdded) {
+                        Log.e("EventHandler", "部分物品添加失败，但继续执行其他操作");
                     }
                 }
-
-                if (!allItemsAdded) {
-                    Log.e("EventHandler", "部分物品添加失败，但继续执行其他操作");
-                }
-
-                return newGlobalCount;
+            } catch (Exception e) {
+                Log.e("EventHandler", "保存采集数据失败", e);
             }
 
-            @Override
-            protected void onPostExecute(Integer newGlobalCount) {
-                if (newGlobalCount == null) {
-                    activity.tvScrollTip.setText("采集失败");
-                    return;
+            // 使用Handler在主线程更新UI
+            final Integer resultCount = newGlobalCount;
+            final int finalExplorationCount = explorationCount;
+            mainHandler.post(() -> {
+                MainActivity uiActivity = getActivity();
+                if (uiActivity != null) {
+                    if (resultCount == null) {
+                        if (uiActivity.tvScrollTip != null) {
+                            uiActivity.tvScrollTip.setText("采集失败");
+                        }
+                        return;
+                    }
+
+                    // 处理容量不足的情况
+                    if (resultCount == -1) {
+                        if (uiActivity.tvScrollTip != null) {
+                            uiActivity.tvScrollTip.setText("背包容量不足，无法采集物品");
+                        }
+                        Log.w("EventHandler", "采集失败：背包容量不足");
+                        return;
+                    }
+
+                    uiActivity.currentCollectTimes = resultCount;
+
+                    // 采集成功时增加游戏时间1小时
+                    increaseGameTimeAfterAction();
+
+                    StringBuilder tip = new StringBuilder("采集成功！获得：\n");
+                    for (AreaResourceManager.CollectedItem item : itemsToSave) {
+                        Rarity rarity = ItemRarityManager.getItemRarity(item.name);
+                        tip.append("- ").append(item.name).append(" ×").append(item.count)
+                                .append(" [").append(rarity.getDisplayName()).append("]\n");
+
+                        // 更新任务进度 - 每种资源采集到的数量
+                        onResourceCollected(item.name, item.count);
+                    }
+
+                    // 添加日志到Logcat
+                    Log.d("EventHandler", "寻宝探险成就次数已更新: " + finalExplorationCount);
+
+                    // 记录背包内物资增长情况，使用采集前获取的背包数据
+                    logBackpackGrowthComparisonWithBefore(areaType, allItems, backpackBefore);
+
+                    if (uiActivity.tvScrollTip != null) {
+                        uiActivity.tvScrollTip.setText(tip.toString().trim());
+                    }
                 }
-
-                // 处理容量不足的情况
-                if (newGlobalCount == -1) {
-                    activity.tvScrollTip.setText("背包容量不足，无法采集物品");
-                    Log.w("EventHandler", "采集失败：背包容量不足");
-                    return;
-                }
-
-                activity.currentCollectTimes = newGlobalCount;
-
-                // 采集成功时增加游戏时间1小时
-                increaseGameTimeAfterAction();
-
-                StringBuilder tip = new StringBuilder("采集成功！获得：\n");
-                for (AreaResourceManager.CollectedItem item : allItems) {
-                    Rarity rarity = ItemRarityManager.getItemRarity(item.name);
-                    tip.append("- ").append(item.name).append(" ×").append(item.count)
-                            .append(" [").append(rarity.getDisplayName()).append("]\n");
-
-                    // 更新任务进度 - 每种资源采集到的数量
-                    onResourceCollected(item.name, item.count);
-                }
-
-                // 添加寻宝探险成就次数日志 - 需要从数据库重新查询
-                int explorationCount = activity.dataManager.getDbHelper().getExplorationTimes(MyApplication.currentUserId);
-                //tip.append("\n寻宝探险成就次数: ").append(explorationCount);
-
-                activity.tvScrollTip.setText(tip.toString().trim());
-
-                // 添加日志到Logcat
-                Log.d("EventHandler", "寻宝探险成就次数已更新: " + explorationCount);
-
-                // 记录背包内物资增长情况，使用采集前获取的背包数据
-                logBackpackGrowthComparisonWithBefore(areaType, allItems, backpackBefore);
-            }
-        }.execute();
+            });
+        });
     }
 
     /**
@@ -593,24 +777,44 @@ public class EventHandler implements View.OnClickListener {
      * 记录背包内物资增长比较日志
      */
     private void logBackpackGrowthComparison(String areaType, List<AreaResourceManager.CollectedItem> collectedItems) {
-        new AsyncTask<Void, Void, Map<String, Integer>>() {
-            @Override
-            protected Map<String, Integer> doInBackground(Void... voids) {
-                // 获取采集前的背包数据
-                return activity.dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
-            }
+        MainActivity uiActivity = getActivity();
+        if (uiActivity == null || collectedItems == null) {
+            Log.w("EventHandler", "logBackpackGrowthComparison: activity或collectedItems为null");
+            return;
+        }
 
-            @Override
-            protected void onPostExecute(Map<String, Integer> backpackBefore) {
+        executorService.execute(() -> {
+            try {
+                // 获取采集前的背包数据
+                Map<String, Integer> backpackBefore = null;
+                if (uiActivity.dataManager != null && uiActivity.dataManager.getDbHelper() != null) {
+                    backpackBefore = uiActivity.dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
+                }
+
+                if (backpackBefore == null) {
+                    Log.w("EventHandler", "logBackpackGrowthComparison: 无法获取背包数据");
+                    return;
+                }
+
                 // 添加短暂延迟，确保数据库写入完成
                 try {
                     Thread.sleep(100); // 等待100毫秒
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    Log.e("EventHandler", "延迟等待被中断", e);
+                    Thread.currentThread().interrupt();
                 }
 
                 // 重新获取采集后的背包数据
-                Map<String, Integer> backpackAfter = activity.dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
+                Map<String, Integer> backpackAfter = null;
+                MainActivity updatedActivity = getActivity();
+                if (updatedActivity != null && updatedActivity.dataManager != null && updatedActivity.dataManager.getDbHelper() != null) {
+                    backpackAfter = updatedActivity.dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
+                }
+
+                if (backpackAfter == null) {
+                    Log.w("EventHandler", "logBackpackGrowthComparison: 无法获取更新后的背包数据");
+                    return;
+                }
 
                 StringBuilder log = new StringBuilder("\n=== 背包物资增长比对 ===\n");
                 log.append("区域: ").append(areaType).append("\n\n");
@@ -618,7 +822,9 @@ public class EventHandler implements View.OnClickListener {
                 // 比较每个物品的增长
                 Map<String, Integer> expectedGrowth = new HashMap<>();
                 for (AreaResourceManager.CollectedItem item : collectedItems) {
-                    expectedGrowth.put(item.name, expectedGrowth.getOrDefault(item.name, 0) + item.count);
+                    if (item != null && item.name != null) {
+                        expectedGrowth.put(item.name, expectedGrowth.getOrDefault(item.name, 0) + item.count);
+                    }
                 }
 
                 boolean allMatch = true;
@@ -654,59 +860,78 @@ public class EventHandler implements View.OnClickListener {
                 log.append("\n比对结果: ").append(allMatch ? "✓ 所有物品增长正确" : "✗ 存在物品增长异常");
 
                 Log.i("BackpackGrowthLog", log.toString());
+            } catch (Exception e) {
+                Log.e("EventHandler", "记录背包增长日志时出错", e);
             }
-        }.execute();
+        });
     }
 
     /**
      * 记录背包内物资增长比较日志（使用采集前获取的背包数据）
      */
     private void logBackpackGrowthComparisonWithBefore(String areaType, List<AreaResourceManager.CollectedItem> collectedItems, Map<String, Integer> backpackBefore) {
-        new AsyncTask<Void, Void, Map<String, Integer>>() {
-            @Override
-            protected Map<String, Integer> doInBackground(Void... voids) {
-                // 获取采集后的背包数据
-                return activity.dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
-            }
+        // 输入参数检查
+        if (collectedItems == null || backpackBefore == null) {
+            Log.w("EventHandler", "logBackpackGrowthComparisonWithBefore: 参数为null");
+            return;
+        }
 
-            @Override
-            protected void onPostExecute(Map<String, Integer> backpackAfter) {
+        executorService.execute(() -> {
+            try {
+                // 获取采集后的背包数据
+                Map<String, Integer> backpackAfter = null;
+                MainActivity uiActivity = getActivity();
+                if (uiActivity != null && uiActivity.dataManager != null && uiActivity.dataManager.getDbHelper() != null) {
+                    backpackAfter = uiActivity.dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
+                }
+
+                if (backpackAfter == null) {
+                    Log.w("EventHandler", "logBackpackGrowthComparisonWithBefore: 无法获取更新后的背包数据");
+                    return;
+                }
+
                 StringBuilder log = new StringBuilder("\n=== 背包物资增长比对（正确时序）===\n");
                 log.append("区域: ").append(areaType).append("\n\n");
 
                 // 比较每个物品的增长
                 Map<String, Integer> expectedGrowth = new HashMap<>();
                 for (AreaResourceManager.CollectedItem item : collectedItems) {
-                    expectedGrowth.put(item.name, expectedGrowth.getOrDefault(item.name, 0) + item.count);
+                    if (item != null && item.name != null) {
+                        expectedGrowth.put(item.name, expectedGrowth.getOrDefault(item.name, 0) + item.count);
+                    }
                 }
 
                 boolean allMatch = true;
                 log.append("采集物资与背包增长比对:\n");
                 for (Map.Entry<String, Integer> expected : expectedGrowth.entrySet()) {
                     String itemName = expected.getKey();
-                    int expectedCount = expected.getValue();
-                    int beforeCount = backpackBefore.getOrDefault(itemName, 0);
-                    int afterCount = backpackAfter.getOrDefault(itemName, 0);
-                    int actualGrowth = afterCount - beforeCount;
+                    if (itemName != null) {
+                        int expectedCount = expected.getValue();
+                        int beforeCount = backpackBefore.getOrDefault(itemName, 0);
+                        int afterCount = backpackAfter.getOrDefault(itemName, 0);
+                        int actualGrowth = afterCount - beforeCount;
 
-                    String status = (expectedCount == actualGrowth) ? "✓" : "✗";
-                    if (expectedCount != actualGrowth) allMatch = false;
+                        String status = (expectedCount == actualGrowth) ? "✓" : "✗";
+                        if (expectedCount != actualGrowth) allMatch = false;
 
-                    log.append(String.format("  %s %s: 预期+%d, 实际+%d (采集前:%d, 采集后:%d)\n",
-                            status, itemName, expectedCount, actualGrowth, beforeCount, afterCount));
+                        log.append(String.format("  %s %s: 预期+%d, 实际+%d (采集前:%d, 采集后:%d)\n",
+                                status, itemName, expectedCount, actualGrowth, beforeCount, afterCount));
+                    }
                 }
 
                 // 检查是否有意外增长的物品
                 log.append("\n其他物品变化:\n");
                 for (Map.Entry<String, Integer> after : backpackAfter.entrySet()) {
                     String itemName = after.getKey();
-                    int beforeCount = backpackBefore.getOrDefault(itemName, 0);
-                    int afterCount = after.getValue();
-                    int growth = afterCount - beforeCount;
+                    if (itemName != null) {
+                        int beforeCount = backpackBefore.getOrDefault(itemName, 0);
+                        int afterCount = after.getValue();
+                        int growth = afterCount - beforeCount;
 
-                    if (growth > 0 && !expectedGrowth.containsKey(itemName)) {
-                        log.append(String.format("  ⚠ %s: 意外增长+%d (采集前:%d, 采集后:%d)\n",
-                                itemName, growth, beforeCount, afterCount));
+                        if (growth > 0 && !expectedGrowth.containsKey(itemName)) {
+                            log.append(String.format("  ⚠ %s: 意外增长+%d (采集前:%d, 采集后:%d)\n",
+                                    itemName, growth, beforeCount, afterCount));
+                        }
                     }
                 }
 
@@ -714,12 +939,15 @@ public class EventHandler implements View.OnClickListener {
                 log.append("\n说明：采集前数据在实际采集操作开始前获取，确保时序正确");
 
                 Log.i("BackpackGrowthLog", log.toString());
+            } catch (Exception e) {
+                Log.e("EventHandler", "记录背包增长日志（正确时序）时出错", e);
             }
-        }.execute();
+        });
     }
 
     // 计算工具加成
     private int getToolResourceBonus(String toolType) {
+        if (toolType == null) return 0;
         if (toolType.contains("石质")) return 1;
         if (toolType.contains("铁质")) return 2;
         if (toolType.contains("钻石")) return 3;
@@ -729,6 +957,8 @@ public class EventHandler implements View.OnClickListener {
     // 计算体力消耗
     private int calculateStaminaCostWithBonuses(int baseCost, List<String> bonuses) {
         int cost = baseCost;
+        if (bonuses == null) return cost;
+
         for (String bonus : bonuses) {
             if (bonus.contains("体力消耗减少20%")) cost = (int) (cost * 0.8);
             else if (bonus.contains("体力消耗减少50%")) cost = (int) (cost * 0.5);
@@ -739,28 +969,35 @@ public class EventHandler implements View.OnClickListener {
     // 处理科技加成物品
     private List<AreaResourceManager.CollectedItem> handleTechBonuses(String areaType, List<String> bonuses) {
         List<AreaResourceManager.CollectedItem> bonusItems = new ArrayList<>();
+        if (bonuses == null || bonuses.isEmpty()) return bonusItems;
+
         AreaResourceManager.AreaResource areaResource = AreaResourceManager.getInstance().getAreaResource(areaType);
         if (areaResource == null) return bonusItems;
 
-        // 修正：用\n替换非法的\ + 换行
         StringBuilder techLog = new StringBuilder("科技加成分析:\n");
 
         for (String bonus : bonuses) {
             if (bonus.contains("额外获得1个")) {
                 String resStr = bonus.split("额外获得1个")[1];
                 String[] resArray = resStr.split("、");
-                String randomRes = resArray[activity.random.nextInt(resArray.length)];
-                bonusItems.add(new AreaResourceManager.CollectedItem(randomRes, 1));
-                // 修正：用\n替换非法的\ + 换行
-                techLog.append("  - ").append(bonus).append(" -> 实际获得: ").append(randomRes).append(" ×1\n");
+                if (resArray.length > 0) {
+                    String randomRes = resArray[random.nextInt(resArray.length)];
+                    bonusItems.add(new AreaResourceManager.CollectedItem(randomRes, 1));
+                    techLog.append("  - ").append(bonus).append(" -> 实际获得: ").append(randomRes).append(" ×1\n");
+                }
             } else if (bonus.contains("额外获得") && bonus.contains("个资源")) {
-                int count = Integer.parseInt(bonus.replaceAll("[^0-9]", ""));
-                AreaResourceManager.ResourceItem randomItem = areaResource.resources.get(
-                        activity.random.nextInt(areaResource.resources.size())
-                );
-                bonusItems.add(new AreaResourceManager.CollectedItem(randomItem.name, count));
-                // 修正：用\n替换非法的\ + 换行
-                techLog.append("  - ").append(bonus).append(" -> 实际获得: ").append(randomItem.name).append(" ×").append(count).append("\n");
+                try {
+                    int count = Integer.parseInt(bonus.replaceAll("[^0-9]", ""));
+                    if (!areaResource.resources.isEmpty()) {
+                        AreaResourceManager.ResourceItem randomItem = areaResource.resources.get(
+                                random.nextInt(areaResource.resources.size())
+                        );
+                        bonusItems.add(new AreaResourceManager.CollectedItem(randomItem.name, count));
+                        techLog.append("  - ").append(bonus).append(" -> 实际获得: ").append(randomItem.name).append(" ×").append(count).append("\n");
+                    }
+                } catch (NumberFormatException e) {
+                    Log.e("EventHandler", "解析科技加成数量失败", e);
+                }
             }
         }
 
@@ -775,6 +1012,9 @@ public class EventHandler implements View.OnClickListener {
 
     // 返回标题页
     public void backToTitlePage() {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
         activity.startActivity(new Intent(activity, TitleActivity.class));
         activity.finish();
     }
@@ -782,10 +1022,17 @@ public class EventHandler implements View.OnClickListener {
     @Override
     public void onClick(View v) {
         int id = v.getId();
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
         if (id == R.id.btn_collect) {
-            // 检查当前位置是否有传送门
+            // 检查当前位置的地形类型
+            String currentTerrain = activity.gameMap.getTerrainType(activity.currentX, activity.currentY);
+
             if (activity.gameMap.hasPortalAtCurrentPosition(MyApplication.currentUserId)) {
                 handleTeleport();
+            } else if ("神殿".equals(currentTerrain)) {
+                handleTempleChallenge();
             } else {
                 handleCollect();
             }
@@ -807,6 +1054,9 @@ public class EventHandler implements View.OnClickListener {
      * 处理任务按钮点击
      */
     private void handleQuestButtonClick() {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
         // 获取任务管理器
         QuestManager questManager = QuestManager.getInstance(activity);
 
@@ -848,6 +1098,9 @@ public class EventHandler implements View.OnClickListener {
      * 显示奖励对话框
      */
     private void showRewardDialog(String rewardDescription) {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         builder.setTitle("任务奖励")
                 .setMessage("恭喜您完成任务！获得奖励：\n\n" + rewardDescription)
@@ -859,6 +1112,9 @@ public class EventHandler implements View.OnClickListener {
      * 显示任务详情对话框
      */
     private void showQuestDetailsDialog() {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
         QuestManager questManager = QuestManager.getInstance(activity);
         Quest currentQuest = questManager.getCurrentActiveQuest(MyApplication.currentUserId);
 
@@ -883,411 +1139,674 @@ public class EventHandler implements View.OnClickListener {
      * 更新任务按钮显示
      */
     public void updateQuestButtonDisplay() {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
         // 获取任务管理器
         QuestManager questManager = QuestManager.getInstance(activity);
 
         // 获取任务按钮
-        android.widget.Button btnQuest = activity.findViewById(R.id.btn_quest_panel);
+        Button btnQuest = activity.findViewById(R.id.btn_quest_panel);
         if (btnQuest == null) {
             return;
         }
 
-        // 检查新手任务是否全部完成
-        boolean hasCompletedNewbieCycle = questManager.hasCompletedNewbieCycle(MyApplication.currentUserId);
-        if (hasCompletedNewbieCycle) {
-            // 新手任务全部完成后隐藏任务按钮
-            btnQuest.setText("任务");
-            btnQuest.setBackgroundColor(0x00000000); // 完全透明
-            btnQuest.setEnabled(false); // 禁用按钮
-            btnQuest.setAlpha(0.5f); // 设置半透明视觉效果
-            return;
-        }
+        // 检查新手任务
+        boolean hasNewbieQuest = questManager.hasUnfinishedNewbieQuest(MyApplication.currentUserId);
+        int currentQuestStatus = questManager.getCurrentQuestStatus(MyApplication.currentUserId);
 
-        // 获取当前任务状态
-        int questStatus = questManager.getCurrentQuestStatus(MyApplication.currentUserId);
-        Quest currentQuest = questManager.getCurrentActiveQuest(MyApplication.currentUserId);
-
-        if (currentQuest == null) {
-            // 没有任务：设置透明背景
-            btnQuest.setText("任务");
-            btnQuest.setBackgroundColor(0x00000000); // 完全透明
-            btnQuest.setEnabled(true); // 启用按钮
-            btnQuest.setAlpha(1.0f); // 完全不透明
-            return;
-        }
-
-        // 确保按钮启用且完全不透明
-        btnQuest.setEnabled(true);
-        btnQuest.setAlpha(1.0f);
-
-        // 根据任务状态设置按钮文本和背景
-        switch (questStatus) {
-            case QuestManager.QUEST_STATUS_ACTIVE:
-                btnQuest.setText("任务");
-                btnQuest.setBackgroundColor(0x66000000); // 半透明黑色
-                break;
-            case QuestManager.QUEST_STATUS_CLAIMABLE:
-                btnQuest.setText("领取");
-                btnQuest.setBackgroundColor(0x6600FF00); // 半透明绿色
-                break;
-            case QuestManager.QUEST_STATUS_COMPLETED:
-                btnQuest.setText("完成");
-                btnQuest.setBackgroundColor(0x660000FF); // 半透明蓝色
-                break;
-            default:
-                btnQuest.setText("任务");
-                btnQuest.setBackgroundColor(0x00000000); // 完全透明
-                break;
+        if (hasNewbieQuest) {
+            btnQuest.setText("新手任务");
+            // 新手任务未完成时，显示提示色
+            btnQuest.setTextColor(activity.getResources().getColor(R.color.quest_newbie_color));
+        } else {
+            if (currentQuestStatus == QuestManager.QUEST_STATUS_CLAIMABLE) {
+                // 可领取状态：显示领取提示
+                btnQuest.setText("任务可领取");
+                btnQuest.setTextColor(activity.getResources().getColor(R.color.quest_claimable_color));
+                // 显示红点提示
+                showQuestRedDot(true);
+            } else if (currentQuestStatus == QuestManager.QUEST_STATUS_ACTIVE) {
+                // 活动状态：显示任务名称
+                Quest currentQuest = questManager.getCurrentActiveQuest(MyApplication.currentUserId);
+                if (currentQuest != null) {
+                    btnQuest.setText(currentQuest.getTitle().length() > 6
+                            ? currentQuest.getTitle().substring(0, 6) + "..."
+                            : currentQuest.getTitle());
+                    btnQuest.setTextColor(activity.getResources().getColor(R.color.quest_active_color));
+                }
+                showQuestRedDot(false);
+            } else {
+                // 无活跃任务
+                btnQuest.setText("任务面板");
+                btnQuest.setTextColor(activity.getResources().getColor(R.color.default_text_color));
+                showQuestRedDot(false);
+            }
         }
     }
 
     /**
-     * 显示任务列表（旧版本，保留兼容性）
+     * 显示/隐藏任务按钮红点提示
      */
-    private void showQuestDialog() {
-        // 检查新手任务是否应该显示
-        boolean shouldShowNewbieQuests = !activity.dataManager.getDbHelper().hasCompletedNewbieCycle(MyApplication.currentUserId);
+    private void showQuestRedDot(boolean show) {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
 
-        // 获取任务管理器
+        View redDot = activity.findViewById(R.id.quest_red_dot);
+        if (redDot != null) {
+            redDot.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    /**
+     * 检查工具等级是否足够采集当前区域
+     * @param toolType 当前装备的工具类型
+     * @param areaType 当前区域类型
+     * @return 是否满足等级要求
+     */
+    private boolean isToolLevelSufficient(String toolType, String areaType) {
+        if (toolType == null || toolType.equals("无") || areaType == null) {
+            return false;
+        }
+
+        // 获取区域等级（假设Constant中定义了区域等级映射）
+        int areaLevel = Constant.getAreaLevel(areaType);
+        // 获取工具等级（通过工具名称解析，如"石质斧头"为1级，"铁质斧头"为2级等）
+        int toolLevel = getToolLevel(toolType);
+
+        Log.d("ToolLevelCheck", "区域[" + areaType + "]等级: " + areaLevel +
+                ", 工具[" + toolType + "]等级: " + toolLevel);
+
+        // 工具等级 >= 区域等级 则满足要求
+        return toolLevel >= areaLevel;
+    }
+
+    /**
+     * 解析工具等级（从工具名称中提取）
+     * @param toolType 工具类型名称
+     * @return 工具等级（默认1级，无工具返回0）
+     */
+    private int getToolLevel(String toolType) {
+        if (toolType == null || toolType.equals("无")) {
+            return 0;
+        }
+        if (toolType.contains("石质")) {
+            return 1;
+        } else if (toolType.contains("铁质")) {
+            return 2;
+        } else if (toolType.contains("钻石")) {
+            return 3;
+        } else if (toolType.contains("传说")) {
+            return 4;
+        }
+        // 默认1级（基础工具）
+        return 1;
+    }
+
+    /**
+     * 计算工具等级与区域等级匹配的资源加成
+     * @param toolType 工具类型
+     * @param areaType 区域类型
+     * @return 等级匹配加成数量
+     */
+    private int calculateLevelBonus(String toolType, String areaType) {
+        if (toolType == null || toolType.equals("无") || areaType == null) {
+            return 0;
+        }
+
+        int toolLevel = getToolLevel(toolType);
+        int areaLevel = Constant.getAreaLevel(areaType);
+        int bonus = 0;
+
+        // 工具等级高于区域等级时，每高1级增加1个加成
+        if (toolLevel > areaLevel) {
+            bonus = toolLevel - areaLevel;
+            Log.d("LevelBonus", "工具等级高于区域等级，获得加成: " + bonus +
+                    "(工具等级:" + toolLevel + ", 区域等级:" + areaLevel + ")");
+        }
+
+        return bonus;
+    }
+
+    /**
+     * 资源采集完成后更新任务进度
+     * @param resourceName 采集的资源名称
+     * @param count 采集数量
+     */
+    private void onResourceCollected(String resourceName, int count) {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
+        // 调用任务管理器更新进度
         QuestManager questManager = QuestManager.getInstance(activity);
+        boolean progressUpdated = questManager.updateResourceCollectionProgress(
+                MyApplication.currentUserId, resourceName, count);
 
-        // 获取当前任务列表
-        List<Quest> activeQuests = questManager.getActiveQuests(MyApplication.currentUserId);
+        if (progressUpdated) {
+            Log.d("QuestProgress", "任务进度更新：资源[" + resourceName + "] +" + count);
+            // 刷新任务按钮显示
+            updateQuestButtonDisplay();
+        }
+    }
 
-        // 修正：用\n替换实际换行，双\n实现空行效果
-        StringBuilder message = new StringBuilder("当前任务：\n\n");
-
-        if (shouldShowNewbieQuests) {
-            message.append("=== 新手任务 ===\n"); // 替换实际换行
-            for (int i = 0; i < Math.min(activeQuests.size(), 10); i++) {
-                Quest quest = activeQuests.get(i);
-                String progressText = questManager.getProgressText(MyApplication.currentUserId, quest.getId());
-                message.append(i + 1).append(". ").append(quest.getName()).append(" (")
-                        .append(progressText).append(")\n"); // 替换实际换行
-            }
-
-            if (activeQuests.size() > 10) {
-                message.append("\n=== 日常任务 ===\n"); // 双\n实现空行+换行
-                for (int i = 10; i < activeQuests.size(); i++) {
-                    Quest quest = activeQuests.get(i);
-                    String progressText = questManager.getProgressText(MyApplication.currentUserId, quest.getId());
-                    message.append(i + 1).append(". ").append(quest.getName()).append(" (")
-                            .append(progressText).append(")\n"); // 替换实际换行
-                }
-            }
-        } else {
-            message.append("=== 日常任务 ===\n"); // 替换实际换行
-            if (activeQuests.isEmpty()) {
-                message.append("暂无活动任务\n"); // 替换实际换行
-            } else {
-                for (int i = 0; i < activeQuests.size(); i++) {
-                    Quest quest = activeQuests.get(i);
-                    String progressText = questManager.getProgressText(MyApplication.currentUserId, quest.getId());
-                    message.append(i + 1).append(". ").append(quest.getName()).append(" (")
-                            .append(progressText).append(")\n"); // 替换实际换行
-                }
-            }
+    /**
+     * 获取玩家拥有的工具总数（背包中所有工具类物品数量之和）
+     * @return 工具总数
+     */
+    public int getToolCount() {
+        MainActivity activity = getActivity();
+        if (activity == null || activity.dataManager == null || activity.dataManager.getDbHelper() == null) {
+            Log.e("EventHandler", "获取工具数量失败：依赖组件为空");
+            return 0;
         }
 
-        // 添加新手任务说明（用\n实现换行）
-        if (shouldShowNewbieQuests) {
-            message.append("\n※ 新手任务在完成简单模式轮回后将不再出现");
+        try {
+            // 查询背包中所有工具类物品（通过ItemConstants定义的工具列表筛选）
+            Map<String, Integer> backpack = activity.dataManager.getDbHelper().getBackpack(MyApplication.currentUserId);
+            int toolCount = 0;
+
+            for (String itemName : ItemConstants.TOOL_ITEMS) {
+                if (backpack.containsKey(itemName)) {
+                    toolCount += backpack.get(itemName);
+                }
+            }
+
+            Log.d("ToolCount", "玩家当前拥有工具总数: " + toolCount);
+            return toolCount;
+        } catch (Exception e) {
+            Log.e("EventHandler", "计算工具数量异常", e);
+            return 0;
+        }
+    }
+
+    /**
+     * 获取玩家已建造的建筑总数
+     * @return 建筑总数
+     */
+    public int getBuildingCount() {
+        MainActivity activity = getActivity();
+        if (activity == null || activity.dataManager == null || activity.dataManager.getDbHelper() == null) {
+            Log.e("EventHandler", "获取建筑数量失败：依赖组件为空");
+            return 0;
         }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle("任务列表")
-                .setMessage(message.toString())
-                .setPositiveButton("确定", null)
+        try {
+            // 从数据库查询当前用户的已建造建筑数量
+            int buildingCount = activity.dataManager.getDbHelper().getBuiltBuildingCount(MyApplication.currentUserId);
+            Log.d("BuildingCount", "玩家当前已建造建筑总数: " + buildingCount);
+            return buildingCount;
+        } catch (Exception e) {
+            Log.e("EventHandler", "计算建筑数量异常", e);
+            return 0;
+        }
+    }
+
+    /**
+     * 获取玩家已探索的地形类型数量（去重）
+     * @return 已探索地形类型数
+     */
+    public int getExploredTerrainsCount() {
+        MainActivity activity = getActivity();
+        if (activity == null || activity.dataManager == null || activity.dataManager.getDbHelper() == null) {
+            Log.e("EventHandler", "获取已探索地形数量失败：依赖组件为空");
+            return 0;
+        }
+
+        try {
+            // 从数据库查询玩家探索过的所有地形类型（去重）
+            List<String> exploredTerrains = activity.dataManager.getDbHelper().getExploredTerrainTypes(MyApplication.currentUserId);
+            int count = exploredTerrains != null ? exploredTerrains.size() : 0;
+            Log.d("ExploredTerrains", "玩家已探索地形类型数: " + count + ", 类型: " + exploredTerrains);
+            return count;
+        } catch (Exception e) {
+            Log.e("EventHandler", "计算已探索地形数量异常", e);
+            return 0;
+        }
+    }
+
+    /**
+     * 处理传送门传送逻辑
+     */
+    private void handleTeleport() {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
+        // 获取当前位置的传送门配置
+        String portalTarget = activity.gameMap.getPortalTarget(MyApplication.currentUserId, activity.currentX, activity.currentY);
+        if (portalTarget == null || portalTarget.isEmpty()) {
+            if (activity.tvScrollTip != null) {
+                activity.tvScrollTip.setText("传送门异常，无法传送");
+            }
+            Log.w("Teleport", "传送门目标为空，当前坐标: (" + activity.currentX + "," + activity.currentY + ")");
+            return;
+        }
+
+        // 传送门目标格式："map:主世界,x:10,y:15" 或 "coord:5,8"（同地图传送）
+        try {
+            String[] targetParts = portalTarget.split(",");
+            String targetMap = activity.gameMap.getCurrentMapType(); // 默认当前地图
+            int targetX = activity.currentX;
+            int targetY = activity.currentY;
+
+            for (String part : targetParts) {
+                String[] keyValue = part.split(":");
+                if (keyValue.length == 2) {
+                    switch (keyValue[0].trim()) {
+                        case "map":
+                            targetMap = keyValue[1].trim();
+                            break;
+                        case "x":
+                            targetX = Integer.parseInt(keyValue[1].trim());
+                            break;
+                        case "y":
+                            targetY = Integer.parseInt(keyValue[1].trim());
+                            break;
+                    }
+                }
+            }
+
+            // 检查目标坐标是否在地图边界内
+            if (targetX < Constant.MAP_MIN || targetX > Constant.MAP_MAX ||
+                    targetY < Constant.MAP_MIN || targetY > Constant.MAP_MAX) {
+                if (activity.tvScrollTip != null) {
+                    activity.tvScrollTip.setText("目标位置超出地图边界，无法传送");
+                }
+                Log.w("Teleport", "目标坐标超出边界: (" + targetX + "," + targetY + ")");
+                return;
+            }
+
+            // 消耗传送所需体力（固定10点）
+            if (activity.stamina < 10) {
+                if (activity.tvScrollTip != null) {
+                    activity.tvScrollTip.setText("体力不足10点，无法激活传送门");
+                }
+                return;
+            }
+            activity.stamina -= 10;
+
+            // 更新地图和位置
+            activity.gameMap.switchMapType(targetMap);
+            activity.currentX = targetX;
+            activity.currentY = targetY;
+
+            // 保存数据和更新UI
+            if (activity.backgroundView != null) {
+                activity.backgroundView.setCurrentCoord(targetX, targetY);
+            }
+            if (activity.dataManager != null) {
+                activity.dataManager.saveAllCriticalData();
+            }
+            if (activity.uiUpdater != null) {
+                activity.uiUpdater.updateAreaInfo();
+                activity.uiUpdater.updateStatusDisplays();
+            }
+
+            // 记录传送日志
+            String mapName = "main_world".equals(targetMap) ? "主世界" : "奇幻大陆";
+            Log.i("Teleport", "传送成功：从" + activity.gameMap.getCurrentMapType() +
+                    "(" + (activity.currentX - targetX) + "," + (activity.currentY - targetY) + ")" +
+                    "传送到" + mapName + "(" + targetX + "," + targetY + ")");
+
+            if (activity.tvScrollTip != null) {
+                activity.tvScrollTip.setText("传送门激活！已传送到" + mapName + "(" + targetX + "," + targetY + ")");
+            }
+
+            // 传送后增加游戏时间2小时
+            activity.gameHour += 2;
+            if (activity.gameHour >= 24) {
+                activity.gameHour -= 24;
+                activity.gameDay++;
+            }
+            if (activity.uiUpdater != null) {
+                activity.uiUpdater.updateTimeDisplay();
+            }
+
+        } catch (Exception e) {
+            Log.e("Teleport", "传送门解析或执行失败: " + portalTarget, e);
+            if (activity.tvScrollTip != null) {
+                activity.tvScrollTip.setText("传送失败，请稍后重试");
+            }
+        }
+    }
+
+    /**
+     * 处理神殿挑战逻辑
+     */
+    private void handleTempleChallenge() {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
+        // 检查是否已完成今日挑战
+        boolean hasCompletedToday = activity.dataManager.getDbHelper().hasCompletedTempleChallengeToday(MyApplication.currentUserId);
+        if (hasCompletedToday) {
+            new AlertDialog.Builder(activity)
+                    .setTitle("神殿挑战")
+                    .setMessage("今日神殿挑战已完成，明日可再次挑战！")
+                    .setPositiveButton("确定", null)
+                    .show();
+            return;
+        }
+
+        // 检查挑战条件（等级>=5）
+        int playerLevel = activity.dataManager.getDbHelper().getPlayerLevel(MyApplication.currentUserId);
+        if (playerLevel < 5) {
+            new AlertDialog.Builder(activity)
+                    .setTitle("挑战条件不足")
+                    .setMessage("需要玩家等级达到5级才能挑战神殿！当前等级：" + playerLevel)
+                    .setPositiveButton("确定", null)
+                    .show();
+            return;
+        }
+
+        // 显示挑战确认对话框
+        new AlertDialog.Builder(activity)
+                .setTitle("神殿挑战")
+                .setMessage("是否进入神殿挑战？\n挑战成功可获得稀有资源和装备！\n挑战失败将扣除10点生命。")
+                .setPositiveButton("确认挑战", (dialog, which) -> startTempleChallenge())
+                .setNegativeButton("取消", null)
                 .show();
     }
 
     /**
-     * 处理传送功能
+     * 开始神殿挑战
      */
-    private void handleTeleport() {
-        // 获取当前地图
-        String currentMap = activity.gameMap.getCurrentMapType();
-        String targetMap = "main_world".equals(currentMap) ? "fantasy_continent" : "main_world";
-        String targetMapName = "main_world".equals(currentMap) ? "奇幻大陆" : "主世界";
+    private void startTempleChallenge() {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
 
-        // 直接传送，不显示确认对话框
-        boolean success = activity.gameMap.switchMap(MyApplication.currentUserId, targetMap);
-        if (success) {
-            Toast.makeText(activity, "成功传送到" + targetMapName, Toast.LENGTH_SHORT).show();
+        // 随机生成挑战结果（70%成功率）
+        boolean challengeSuccess = random.nextDouble() < 0.7;
 
-            // 重新加载用户坐标数据
-            activity.dataManager.loadGameData();
+        executorService.execute(() -> {
+            try {
+                // 模拟挑战耗时（1秒）
+                Thread.sleep(1000);
 
-            // 强制刷新背景视图显示新坐标
-            if (activity.backgroundView != null) {
-                activity.backgroundView.setCurrentCoord(activity.currentX, activity.currentY, true);
-                activity.backgroundView.invalidate();
-                activity.backgroundView.postInvalidate();
+                // 标记今日已挑战
+                activity.dataManager.getDbHelper().markTempleChallengeCompleted(MyApplication.currentUserId);
+
+                mainHandler.post(() -> {
+                    MainActivity uiActivity = getActivity();
+                    if (uiActivity == null) return;
+
+                    if (challengeSuccess) {
+                        // 挑战成功：发放奖励
+                        rewardTempleChallengeSuccess();
+                    } else {
+                        // 挑战失败：扣除生命
+                        uiActivity.life = Math.max(0, uiActivity.life - 10);
+                        // 更新数据库生命
+                        Map<String, Object> updates = new HashMap<>();
+                        updates.put("life", uiActivity.life);
+                        uiActivity.dataManager.getDbHelper().updateUserStatus(MyApplication.currentUserId, updates);
+
+                        new AlertDialog.Builder(uiActivity)
+                                .setTitle("挑战失败")
+                                .setMessage("神殿挑战失败！扣除10点生命，当前生命：" + uiActivity.life)
+                                .setPositiveButton("确定", null)
+                                .show();
+
+                        if (uiActivity.uiUpdater != null) {
+                            uiActivity.uiUpdater.updateStatusDisplays();
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                Log.e("TempleChallenge", "挑战执行异常", e);
+                mainHandler.post(() -> {
+                    MainActivity uiActivity = getActivity();
+                    if (uiActivity != null) {
+                        Toast.makeText(uiActivity, "挑战异常，请稍后重试", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
+        });
+    }
 
-            // 刷新界面显示
-            activity.uiUpdater.updateAreaInfo();
+    /**
+     * 发放神殿挑战成功奖励
+     */
+    private void rewardTempleChallengeSuccess() {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
 
-            // 延迟更新按钮文本，确保坐标数据已完全加载
-            activity.backgroundView.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    updateCollectButtonText();
-                    Log.d("TeleportDebug", "传送后按钮状态更新 - 当前位置: (" + activity.currentX + ", " + activity.currentY + "), 是否有传送门: " + activity.gameMap.hasPortalAtCurrentPosition(MyApplication.currentUserId));
-                }
-            }, 100);
+        // 生成稀有奖励（随机1种稀有资源+1件高级工具）
+        String[] rareResources = {ItemConstants.ITEM_MYTHRIL_ORE, ItemConstants.ITEM_DRAGON_SCALE, ItemConstants.ITEM_ELF_CRYSTAL};
+        String[] advancedTools = {ItemConstants.ITEM_DIAMOND_AXE, ItemConstants.ITEM_DIAMOND_PICKAXE, ItemConstants.ITEM_LEGENDARY_SHOVEL};
 
-            Log.i("TeleportDebug", "传送成功 - 从" + currentMap + "传送到" + targetMap + ", 新坐标: (" + activity.currentX + ", " + activity.currentY + ")");
+        String rewardResource = rareResources[random.nextInt(rareResources.length)];
+        int resourceCount = 1 + random.nextInt(3); // 1-3个
+        String rewardTool = advancedTools[random.nextInt(advancedTools.length)];
+
+        // 发放奖励到背包
+        activity.dataManager.getDbHelper().updateBackpackItem(MyApplication.currentUserId, rewardResource, resourceCount);
+        activity.dataManager.getDbHelper().updateBackpackItem(MyApplication.currentUserId, rewardTool, 1);
+
+        // 更新内存背包数据
+        if (activity.backpack.containsKey(rewardResource)) {
+            activity.backpack.put(rewardResource, activity.backpack.get(rewardResource) + resourceCount);
         } else {
-            Toast.makeText(activity, "传送失败", Toast.LENGTH_SHORT).show();
-            Log.e("TeleportDebug", "传送失败 - 从" + currentMap + "传送到" + targetMap);
+            activity.backpack.put(rewardResource, resourceCount);
+        }
+        if (activity.backpack.containsKey(rewardTool)) {
+            activity.backpack.put(rewardTool, activity.backpack.get(rewardTool) + 1);
+        } else {
+            activity.backpack.put(rewardTool, 1);
+        }
+
+        // 显示奖励对话框
+        StringBuilder rewardMsg = new StringBuilder("挑战成功！获得以下奖励：\n");
+        rewardMsg.append("- ").append(rewardResource).append(" ×").append(resourceCount).append("\n");
+        rewardMsg.append("- ").append(rewardTool).append(" ×1");
+
+        new AlertDialog.Builder(activity)
+                .setTitle("神殿嘉奖")
+                .setMessage(rewardMsg.toString())
+                .setPositiveButton("确定", null)
+                .show();
+
+        Log.i("TempleChallenge", "挑战成功，发放奖励: " + rewardResource + "×" + resourceCount + ", " + rewardTool + "×1");
+
+        // 刷新UI
+        if (activity.uiUpdater != null) {
+            activity.uiUpdater.updateBackpackDisplay();
         }
     }
 
     /**
-     * 更新采集按钮文本
+     * 执行动作后增加游戏时间（默认1小时）
      */
-    public void updateCollectButtonText() {
-        android.widget.Button btnCollect = activity.findViewById(R.id.btn_collect);
-        if (activity.gameMap.hasPortalAtCurrentPosition(MyApplication.currentUserId)) {
-            // 在传送门地形，显示"传送"
-            btnCollect.setText("传送");
-        } else {
-            // 不在传送门地形，显示"采集"
-            btnCollect.setText("采集");
+    private void increaseGameTimeAfterAction() {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
+        activity.gameHour += 1;
+        // 处理跨天逻辑
+        if (activity.gameHour >= 24) {
+            activity.gameHour -= 24;
+            activity.gameDay++;
+            // 跨天触发状态刷新（如体力、饥饿度重置等）
+            refreshStatusOnNewDay();
+        }
+
+        if (activity.uiUpdater != null) {
+            activity.uiUpdater.updateTimeDisplay();
         }
     }
 
-    // 新增：cdRefreshRunnable的getter方法
-    public Runnable getCdRefreshRunnable() {
-        return cdRefreshRunnable;
+    /**
+     * 跨天刷新玩家状态
+     */
+    private void refreshStatusOnNewDay() {
+        MainActivity activity = getActivity();
+        if (activity == null) return;
+
+        // 跨天恢复50%体力和生命
+        activity.stamina = Math.min(100, (int) (activity.stamina * 1.5));
+        activity.life = Math.min(100, (int) (activity.life * 1.5));
+        // 重置饥饿度和口渴度
+        activity.hunger = 80;
+        activity.thirst = 80;
+
+        // 更新数据库状态
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("stamina", activity.stamina);
+        updates.put("life", activity.life);
+        updates.put("hunger", activity.hunger);
+        updates.put("thirst", activity.thirst);
+        updates.put("game_day", activity.gameDay);
+        updates.put("game_hour", activity.gameHour);
+
+        executorService.execute(() -> {
+            try {
+                MainActivity currentActivity = getActivity();
+                if (currentActivity != null && currentActivity.dataManager != null && currentActivity.dataManager.getDbHelper() != null) {
+                    currentActivity.dataManager.getDbHelper().updateUserStatus(MyApplication.currentUserId, updates);
+                }
+            } catch (Exception e) {
+                Log.e("EventHandler", "跨天状态刷新失败", e);
+            }
+        });
+
+        // 显示跨天提示
+        if (activity.tvScrollTip != null) {
+            activity.tvScrollTip.setText("新的一天到来！体力、生命恢复50%，饥饿口渴已重置");
+        }
+
+        Log.i("GameTime", "跨天成功：当前天数" + activity.gameDay + "，状态已刷新");
     }
 
-    // 新增：cdRefreshRunnable的setter方法
+    /**
+     * 更新采集按钮文本和状态
+     */
+    public void updateCollectButtonText() {
+        MainActivity activity = getActivity();
+        if (activity == null || activity.findViewById(R.id.btn_collect) == null) {
+            return;
+        }
+
+        activity.runOnUiThread(() -> {
+            Button btnCollect = activity.findViewById(R.id.btn_collect);
+            if (btnCollect == null) return;
+            
+            try {
+
+                // 检查当前位置是否可以采集
+                String areaType = Constant.getAreaChineseTypeByCoord(activity.currentX, activity.currentY);
+                if (areaType == null || areaType.isEmpty()) {
+                    btnCollect.setText("无法采集");
+                    btnCollect.setEnabled(false);
+                    return;
+                }
+
+                // 检查采集次数和恢复时间
+                DBHelper dbHelper = activity.dataManager.getDbHelper();
+                Map<String, Object> areaData = dbHelper.getAreaCollectData(MyApplication.currentUserId, activity.currentX, activity.currentY);
+                
+                if (areaData != null) {
+                    int collectedTimes = (int) areaData.getOrDefault("collect_count", 0);
+                    long lastCollectTime = (long) areaData.getOrDefault("last_collect_time", 0L);
+                    
+                    if (!Constant.canCollect(areaType, collectedTimes, lastCollectTime)) {
+                        // 计算剩余恢复时间
+                        long now = SystemClock.elapsedRealtime();
+                        Constant.AreaConfig config = Constant.AREA_CONFIG.get(areaType);
+                        if (config != null) {
+                            long cd = config.recoveryMinutes * 60 * 1000;
+                            long remaining = cd - (now - lastCollectTime);
+                            
+                            if (remaining > 0) {
+                                int minutes = (int) (remaining / (60 * 1000));
+                                int seconds = (int) ((remaining % (60 * 1000)) / 1000);
+                                btnCollect.setText("恢复中 " + minutes + ":" + String.format("%02d", seconds));
+                                btnCollect.setEnabled(false);
+                                return;
+                            }
+                        }
+                    }
+                }
+
+                // 检查体力是否足够
+                int staminaCost = Constant.getStaminaCost(areaType);
+                if (activity.stamina < staminaCost) {
+                    btnCollect.setText("体力不足");
+                    btnCollect.setEnabled(false);
+                    return;
+                }
+
+                // 检查工具是否匹配
+                String toolType = activity.currentEquip;
+                if (!Constant.isToolSuitableForArea(toolType, areaType)) {
+                    btnCollect.setText("工具不足");
+                    btnCollect.setEnabled(false);
+                    return;
+                }
+
+                // 检查背包空间
+                Map<String, Integer> backpack = dbHelper.getBackpack(MyApplication.currentUserId);
+                int backpackCap = dbHelper.getBackpackCapacity(MyApplication.currentUserId);
+                int currentSize = backpack.values().stream().mapToInt(Integer::intValue).sum();
+                
+                if (currentSize >= backpackCap) {
+                    btnCollect.setText("背包已满");
+                    btnCollect.setEnabled(false);
+                    return;
+                }
+
+                // 可以采集
+                btnCollect.setText("采集");
+                btnCollect.setEnabled(true);
+
+            } catch (Exception e) {
+                Log.e("EventHandler", "更新采集按钮状态失败", e);
+                // 出错时显示默认状态
+                btnCollect.setText("采集");
+                btnCollect.setEnabled(false);
+            }
+        });
+    }
+
+    /**
+     * 设置冷却刷新Runnable
+     */
     public void setCdRefreshRunnable(Runnable runnable) {
         this.cdRefreshRunnable = runnable;
     }
 
     /**
-     * 计算工具等级和区域等级匹配的额外加成（修改方法）
-     * @param equipType 工具类型
-     * @param areaType 区域类型
-     * @return 等级匹配加成数量（工具等级>区域等级时返回差值，否则返回0）
+     * 获取冷却刷新Runnable
      */
-    private int calculateLevelBonus(String equipType, String areaType) {
-        ToolLevel toolLevel = ToolUtils.getToolLevel(equipType);
-
-        // 获取区域等级（根据区域类型判断）
-        int areaLevel = getAreaLevel(areaType);
-
-        if (toolLevel == ToolLevel.UNKNOWN) {
-            return 0;
-        }
-
-        int toolLevelValue = toolLevel.ordinal();
-
-        // 工具等级高于区域等级时，给予额外加成
-        if (toolLevelValue > areaLevel) {
-            int levelDifference = toolLevelValue - areaLevel;
-            // 每高一级额外获得1个资源
-            return levelDifference;
-        }
-
-        return 0;
+    public Runnable getCdRefreshRunnable() {
+        return cdRefreshRunnable;
     }
 
     /**
-     * 获取区域等级（根据区域类型判断）
-     * @param areaType 区域类型
-     * @return 区域等级
+     * 资源释放：关闭线程池、移除Runnable，防止内存泄漏
      */
-    private int getAreaLevel(String areaType) {
-        // 统一使用Constant中的区域等级定义
-        return Constant.getAreaLevel(areaType);
-    }
+    public void cleanup() {
+        Log.d("EventHandler", "执行cleanup，释放资源");
 
-    /**
-     * 检查工具等级是否足够采集该区域
-     * @param equipType 工具类型
-     * @param areaType 区域类型
-     * @return 工具等级是否足够
-     */
-    private boolean isToolLevelSufficient(String equipType, String areaType) {
-        ToolLevel toolLevel = ToolUtils.getToolLevel(equipType);
-
-        // 获取区域等级
-        int areaLevel = getAreaLevel(areaType);
-
-        // 空手（UNKNOWN工具）可以采集等级0和等级1区域
-        if (toolLevel == ToolLevel.UNKNOWN) {
-            return areaLevel <= 1; // 等级0和等级1区域允许空手采集
+        // 移除循环Runnable
+        if (cdRefreshRunnable != null && mainHandler != null) {
+            mainHandler.removeCallbacks(cdRefreshRunnable);
+            cdRefreshRunnable = null;
         }
 
-        int toolLevelValue = toolLevel.getLevel(); // 修复：使用getLevel()而不是ordinal()
-
-        // 工具等级必须大于等于区域等级才能采集
-        return toolLevelValue >= areaLevel;
-    }
-
-    /**
-     * 动作成功后增加游戏时间1小时
-     */
-    private void increaseGameTimeAfterAction() {
-        try {
-            activity.gameHour++;
-
-            // 状态效果管理器处理小时变化
-            StatusEffectManager.onHourPassed(MyApplication.currentUserId);
-
-            // 检查是否超过一天
-            if (activity.gameHour >= Constant.GAME_HOURS_PER_DAY) {
-                activity.gameHour = 0;
-                activity.gameDay++;
-            }
-
-            // 刷新时间显示
-            activity.uiUpdater.updateTimeDisplay();
-
-            // 检查刷新时间
-            if (activity.gameHour == Constant.REFRESH_HOUR && activity.gameDay > activity.lastRefreshDay) {
-                activity.timeManager.resetCollectTimes();
-                activity.lastRefreshDay = activity.gameDay;
-            }
-
-            // 保存时间数据
-            activity.timeManager.saveTimeData();
-
-            Log.i("GameTime", "动作成功，游戏时间增加1小时，当前时间: 第" + activity.gameDay + "天 " + activity.gameHour + "时");
-
-            // 检查任务进度 - 生存时间相关的任务
-            checkQuestProgress();
-        } catch (Exception e) {
-            Log.e("GameTime", "增加游戏时间时出错: " + e.getMessage());
-        }
-    }
-
-    // ========== 任务系统集成方法 ==========
-
-    /**
-     * 检查并更新任务进度
-     */
-    private void checkQuestProgress() {
-        QuestManager questManager = QuestManager.getInstance(activity);
-
-        // 检查生存时间相关的任务
-        questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_SURVIVAL_TIME, activity.gameDay);
-
-        // 检查资源收集任务
-        if (activity.backpack != null) {
-            // 检查杂草收集任务
-            if (activity.backpack.containsKey(ItemConstants.ITEM_WEED) && activity.backpack.get(ItemConstants.ITEM_WEED) > 0) {
-                questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_COLLECT_GRASS, activity.backpack.get(ItemConstants.ITEM_WEED));
-            }
-
-            // 检查木头收集任务
-            if (activity.backpack.containsKey(ItemConstants.ITEM_WOOD) && activity.backpack.get(ItemConstants.ITEM_WOOD) > 0) {
-                questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_COLLECT_WOOD, activity.backpack.get(ItemConstants.ITEM_WOOD));
-            }
-
-            // 检查石头收集任务
-            if (activity.backpack.containsKey(ItemConstants.ITEM_STONE) && activity.backpack.get(ItemConstants.ITEM_STONE) > 0) {
-                questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_COLLECT_STONE, activity.backpack.get(ItemConstants.ITEM_STONE));
+        // 关闭线程池（等待已提交任务完成，不接受新任务）
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdown();
+            try {
+                // 等待60秒，若仍未关闭则强制终止
+                if (!executorService.awaitTermination(60, java.util.concurrent.TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
             }
         }
 
-        // 检查工具制作任务
-        questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_CRAFT_TOOLS, getToolCount());
-
-        // 检查建筑建造任务
-        questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_BUILD_STRUCTURE, getBuildingCount());
-
-        // 检查探索任务
-        questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_EXPLORE_TERRAIN, getExploredTerrainsCount());
-    }
-
-    /**
-     * 获取已制作工具数量
-     */
-    private int getToolCount() {
-        // 这里需要实现获取工具数量的逻辑
-        // 暂时返回0，后续根据实际需求实现
-        return 0;
-    }
-
-    /**
-     * 获取已建造建筑数量
-     */
-    private int getBuildingCount() {
-        // 这里需要实现获取建筑数量的逻辑
-        // 暂时返回0，后续根据实际需求实现
-        return 0;
-    }
-
-    /**
-     * 获取已探索地形类型数量
-     */
-    private int getExploredTerrainsCount() {
-        // 这里需要实现获取已探索地形数量的逻辑
-        // 暂时返回0，后续根据实际需求实现
-        return 0;
-    }
-
-    /**
-     * 当收集到资源时更新任务进度
-     */
-    public void onResourceCollected(String resourceType, int count) {
-        QuestManager questManager = QuestManager.getInstance(activity);
-
-        switch (resourceType) {
-            case ItemConstants.ITEM_WEED:
-                questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_COLLECT_GRASS, count);
-                break;
-            case ItemConstants.ITEM_WOOD:
-                questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_COLLECT_WOOD, count);
-                break;
-            case ItemConstants.ITEM_STONE:
-                questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_COLLECT_STONE, count);
-                break;
-            case ItemConstants.ITEM_FISH:
-            case ItemConstants.ITEM_COCONUT:
-            case ItemConstants.ITEM_BERRY:
-            case ItemConstants.ITEM_WATER:
-            case ItemConstants.ITEM_HERB:
-                // 这些资源也有对应的任务，调用通用更新方法
-                questManager.updateQuestProgress(MyApplication.currentUserId, resourceType, count);
-                break;
-            // 可以根据需要添加更多资源类型
-        }
-
-        Log.d("QuestProgress", "资源收集: " + resourceType + " ×" + count + " - 任务进度已更新");
-    }
-
-    /**
-     * 当装备工具时更新任务进度
-     */
-    public void onToolEquipped(String toolType) {
-        QuestManager questManager = QuestManager.getInstance(activity);
-
-        // 检查是否是新玩家首次进入游戏（任务1）
-        if (questManager.isFirstTimePlaying(MyApplication.currentUserId)) {
-            questManager.completeQuest(MyApplication.currentUserId, 1); // 完成第一个任务
-        }
-    }
-
-    /**
-     * 当建筑建造完成时更新任务进度
-     */
-    public void onBuildingConstructed(String buildingType) {
-        QuestManager questManager = QuestManager.getInstance(activity);
-
-        // 更新建筑建造任务进度
-        questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_BUILD_STRUCTURE, 1);
-
-        // 检查特定建筑任务
-        if (buildingType.equals("茅草屋")) {
-            questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_BUILD_THATCHED_HUT, 1);
-        } else if (buildingType.equals("篝火")) {
-            questManager.updateProgress(MyApplication.currentUserId, QuestManager.QUEST_TYPE_BUILD_CAMPFIRE, 1);
-        }
+        // 清空WeakReference引用（辅助GC）
+        activityRef.clear();
     }
 }

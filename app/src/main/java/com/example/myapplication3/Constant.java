@@ -105,6 +105,7 @@ public class Constant {
         TERRAIN_DEFAULT_HEIGHT.put("雪原", 2);
         TERRAIN_DEFAULT_HEIGHT.put("村落", 1); // 村落默认高度1
         TERRAIN_DEFAULT_HEIGHT.put("传送门", 1); // 传送门默认高度1
+        TERRAIN_DEFAULT_HEIGHT.put("神殿", 1); // 神殿默认高度1
 
         // 单独设置坐标(19,13)的高度为2（覆盖默认）
         COORD_SPECIFIC_HEIGHT.put("19,13", 1);
@@ -173,6 +174,7 @@ public class Constant {
     public static final String FOREST = "forest"; // 树林
     public static final String ABANDONED_CAMP = "abandoned_camp"; // 废弃营地
     public static final String PORTAL = "portal"; // 传送门
+    public static final String TEMPLE = "temple"; // 神殿
 
     // 中文地形 → 英文地形映射
     private static final Map<String, String> CHINESE_TO_ENGLISH_TERRAIN = new HashMap<>();
@@ -193,6 +195,7 @@ public class Constant {
         CHINESE_TO_ENGLISH_TERRAIN.put("树林", FOREST);
         CHINESE_TO_ENGLISH_TERRAIN.put("废弃营地", ABANDONED_CAMP);
         CHINESE_TO_ENGLISH_TERRAIN.put("传送门", PORTAL);
+        CHINESE_TO_ENGLISH_TERRAIN.put("神殿", TEMPLE);
     }
 
     // 地形 -> 背景资源ID 映射（英文 key）
@@ -214,6 +217,7 @@ public class Constant {
         TERRAIN_BACKGROUND_RES.put(FOREST, R.drawable.shuling);
         TERRAIN_BACKGROUND_RES.put(ABANDONED_CAMP, R.drawable.feiqiyingdi);
         TERRAIN_BACKGROUND_RES.put(PORTAL, R.drawable.chuansongmen);
+        TERRAIN_BACKGROUND_RES.put(TEMPLE, R.drawable.shendian);
     }
 
     // 获取区域英文类型（用于背景图）
@@ -789,6 +793,7 @@ public class Constant {
         AREA_CONFIG.put("小石屋", new AreaConfig(0, 0, 1, "NONE"));
         AREA_CONFIG.put("砖瓦屋", new AreaConfig(0, 0, 1, "NONE"));
         AREA_CONFIG.put("传送门", new AreaConfig(0, 0, 1, "NONE"));
+        AREA_CONFIG.put("神殿", new AreaConfig(0, 0, 1, "NONE"));
 
     }
 

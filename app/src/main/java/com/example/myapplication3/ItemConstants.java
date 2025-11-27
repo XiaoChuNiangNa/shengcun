@@ -121,4 +121,39 @@ public class ItemConstants {
     public static final String ITEM_KELP_FISH_SOUP = "海带鱼鲜汤";
     public static final String ITEM_WINTER_MELON_CRAWFISH_SOUP = "冬瓜螃蟹汤";
     public static final String ITEM_DARK_FOOD = "黑暗料理";
+
+    // 特殊物品常量
+    public static final String ITEM_MYTHRIL_ORE = "秘银矿石";
+    public static final String ITEM_DRAGON_SCALE = "龙鳞";
+    public static final String ITEM_ELF_CRYSTAL = "精灵水晶";
+    public static final String ITEM_DIAMOND_AXE = "钻石斧";
+    public static final String ITEM_DIAMOND_PICKAXE = "钻石镐";
+    public static final String ITEM_LEGENDARY_SHOVEL = "传奇铲";
+
+    // 工具物品列表（用于工具统计）
+    public static final String[] TOOL_ITEMS = {
+        // 石质工具
+        ITEM_STONE_PICKAXE,
+        ITEM_STONE_AXE,
+        ITEM_STONE_FISHING_ROD,
+        
+        // 铁质工具
+        EQUIP_IRON_PICKAXE,
+        EQUIP_IRON_AXE,
+        EQUIP_IRON_FISHING_ROD,
+        EQUIP_IRON_SICKLE,
+        
+        // 钻石工具
+        EQUIP_DIAMOND_PICKAXE,
+        EQUIP_DIAMOND_AXE,
+        EQUIP_DIAMOND_FISHING_ROD,
+        EQUIP_DIAMOND_SICKLE,
+        
+        // 其他工具
+        ITEM_WOODEN_BOAT,
+        ITEM_GRASS_ROPE,
+        ITEM_REINFORCED_ROPE,
+        ITEM_HARD_ROPE,
+        ITEM_CLAY_POT
+    };
 }

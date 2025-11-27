@@ -48,7 +48,7 @@ public class MainActivity extends BaseActivity {
 
     // 视图控件
     public TextView tvAreaInfo, tvLife, tvHunger, tvThirst, tvStamina, tvTip;
-    public TextView tvAreaDescription, tvScrollTip, tvEquipStatus;
+    public TextView tvAreaDescription, tvScrollTip, tvEquipStatus, tvBackpackDisplay;
     public TextView tvTime, tvDay, tvTemperature;
     public ImageView ivSetting, ivClock, ivThermometer;
     public ImageButton btnBackpack, btnEquipment, btnFunctions;
@@ -761,8 +761,11 @@ public class MainActivity extends BaseActivity {
                 reloadBackpack();
                 
                 // 显示战斗胜利提示
-                String animalName = data.getStringExtra("animal_name");
-                Toast.makeText(this, "成功击败" + animalName + "，战利品已添加到背包！", Toast.LENGTH_SHORT).show();
+                String enemyName = data.getStringExtra("boss_name");
+                if (enemyName == null) {
+                    enemyName = data.getStringExtra("animal_name");
+                }
+                Toast.makeText(this, "成功击败" + enemyName + "，战利品已添加到背包！", Toast.LENGTH_SHORT).show();
                 
                 // 更新UI显示
                 if (uiUpdater != null) {

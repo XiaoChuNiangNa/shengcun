@@ -706,4 +706,58 @@ public class QuestManager {
         
         Log.d("QuestManager", "用户" + userId + "所有任务进度已重置");
     }
+
+    /**
+     * 检查是否有未完成的新手任务
+     */
+    public boolean hasUnfinishedNewbieQuest(int userId) {
+        UserQuestData userData = getUserQuestData(userId);
+        
+        // 如果已完成新手轮回，则没有新手任务
+        if (userData.hasCompletedNewbieCycle) {
+            return false;
+        }
+        
+        // 检查是否还有未完成的新手任务
+        for (Quest quest : allQuests) {
+            if (quest.isNewbieQuest()) {
+                Quest userQuest = getQuestByIdForUser(userData, quest.getId());
+                if (userQuest == null || !userQuest.isCompleted()) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * 更新资源采集进度（用于成就系统）
+     */
+    public boolean updateResourceCollectionProgress(int userId, String resourceName, int count) {
+        UserQuestData userData = getUserQuestData(userId);
+        
+        // 检查当前活跃任务是否与该资源相关
+        if (userData.currentActiveQuest != null && !userData.currentActiveQuest.isCompleted()) {
+            // 更新任务进度
+            boolean completed = userData.currentActiveQuest.updateProgress(resourceName, count);
+            
+            if (completed) {
+                // 完成任务
+                completeQuestForUser(userId, userData, userData.currentActiveQuest);
+                
+                // 激活下一个任务
+                activateNextQuest(userId, userData);
+                
+                Log.d("QuestProgress", "任务完成: " + userData.currentActiveQuest.getTitle());
+            }
+            
+            // 保存进度
+            saveQuestProgress(userId, userData);
+            
+            return true;
+        }
+        
+        return false;
+    }
 }

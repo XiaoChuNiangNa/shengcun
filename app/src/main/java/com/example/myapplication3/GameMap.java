@@ -360,4 +360,38 @@ public class GameMap {
         return dbHelper.checkPortalAtCurrentPosition(userId);
     }
 
+    /**
+     * 获取传送门目标位置
+     */
+    public String getPortalTarget(int userId, int currentX, int currentY) {
+        if (dbHelper == null) {
+            Log.e("GameMap", "dbHelper为空，无法获取传送门目标");
+            return null;
+        }
+        
+        try {
+            // 从数据库查询当前位置的传送门配置
+            return dbHelper.getPortalTarget(userId, currentX, currentY);
+        } catch (Exception e) {
+            Log.e("GameMap", "获取传送门目标失败", e);
+            return null;
+        }
+    }
+
+    /**
+     * 切换地图类型
+     */
+    public void switchMapType(String newMapType) {
+        if (newMapType == null || newMapType.isEmpty()) {
+            Log.e("GameMap", "无效的地图类型");
+            return;
+        }
+        
+        this.currentMapType = newMapType;
+        Log.d("GameMap", "地图类型已切换为: " + newMapType);
+        
+        // 如果需要，可以重新加载地图数据
+        // resetMap();
+    }
+
 }
