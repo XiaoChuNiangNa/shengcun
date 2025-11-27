@@ -445,34 +445,47 @@ public class EventHandler implements View.OnClickListener {
         String matchResult = ToolUtils.checkToolAreaMatch(activity.currentEquip, areaType);
         Log.i("ToolDebug", "工具等级匹配结果: " + matchResult);
 
-        // 检查工具等级是否足够（新增等级匹配验证）
-        if (!isToolLevelSufficient(activity.currentEquip, areaType)) {
-            Log.d("ToolDebug", "工具等级不足: " + activity.currentEquip + " -> " + areaType);
-            if (activity.tvScrollTip != null) {
-                activity.tvScrollTip.setText("工具等级不足，无法采集该区域");
-            }
-            return;
-        }
+        // 新的采集规则：任何区域都可以空手采集或装备工具采集
+        // 不再限制工具等级和工具类型，所有工具都可以在任何区域使用
+        boolean hasTool = activity.currentEquip != null && !activity.currentEquip.isEmpty() && !activity.currentEquip.equals("无");
+        Log.d("ToolDebug", "采集检查: tool=" + activity.currentEquip + ", hasTool=" + hasTool + ", area=" + areaType);
 
-        // 检查工具类型是否匹配（等级0区域允许任意工具，其他区域检查类型匹配）
-        boolean isToolTypeMatched = Constant.isToolSuitableForArea(activity.currentEquip, areaType);
-        if (!isToolTypeMatched) {
-            Log.d("ToolDebug", "工具类型不匹配: " + activity.currentEquip + " -> " + areaType + "（但允许采集，无加成）");
+        // 计算基础体力消耗和采集时间
+        int areaLevel = Constant.getAreaLevel(areaType);
+        int toolLevel = getToolLevel(activity.currentEquip);
+        
+        // 根据工具等级和区域等级计算体力消耗
+        int baseStaminaCost = 5;
+        int staminaMultiplier = 1;
+        
+        if (!hasTool) {
+            // 空手采集：消耗(n-m)倍时间和体力，其中m=0（空手工具等级）
+            staminaMultiplier = areaLevel - 0 + 1; // +1确保至少1倍消耗
+        } else if (toolLevel < areaLevel) {
+            // 工具等级 < 区域等级：消耗(n-m)倍时间和体力
+            staminaMultiplier = areaLevel - toolLevel + 1;
         } else {
-            Log.d("ToolDebug", "工具类型匹配: " + activity.currentEquip + " -> " + areaType + "（有加成）");
+            // 工具等级 >= 区域等级：正常消耗
+            staminaMultiplier = 1;
         }
-
-        if (activity.stamina < 3) {
+        
+        int finalStaminaCost = baseStaminaCost * staminaMultiplier;
+        
+        if (activity.stamina < finalStaminaCost) {
             if (activity.tvScrollTip != null) {
-                activity.tvScrollTip.setText("体力不足，无法采集");
+                activity.tvScrollTip.setText("体力不足，需要" + finalStaminaCost + "点体力");
             }
             return;
         }
 
         // 消耗体力
-        int baseStaminaCost = 5;
-        int finalStaminaCost = calculateStaminaCostWithBonuses(baseStaminaCost, bonusTipsList);
         activity.stamina = Math.max(0, activity.stamina - finalStaminaCost);
+        
+        // 显示体力消耗信息
+        if (staminaMultiplier > 1) {
+            Log.i("ToolDebug", "体力消耗倍数: " + staminaMultiplier + "x (区域等级=" + areaLevel + ", 工具等级=" + toolLevel + ")");
+            bonusTipsList.add("体力消耗: " + finalStaminaCost + "点 (" + staminaMultiplier + "倍)");
+        }
 
         if (activity.uiUpdater != null) {
             activity.uiUpdater.updateStatusDisplays();
@@ -495,15 +508,13 @@ public class EventHandler implements View.OnClickListener {
 
         // 处理装备耐久和加成
         int toolBonus = 0;
-        if (activity.currentEquip != null && !activity.currentEquip.isEmpty() && !activity.currentEquip.equals("无")) {
+        if (hasTool) {
             int currentDurability = activity.dataManager.getDbHelper().getDurability(MyApplication.currentUserId, activity.currentEquip);
 
-            // 只有工具类型匹配时才给予加成
-            if (isToolTypeMatched) {
-                toolBonus = getToolResourceBonus(activity.currentEquip);
-            }
+            // 根据新的工具类型规则计算加成
+            toolBonus = getToolResourceBonusByType(activity.currentEquip, areaType);
 
-            Log.d("ToolDebug", "当前装备: " + activity.currentEquip + ", 耐久度: " + currentDurability + ", 工具加成: +" + toolBonus + ", 类型匹配: " + isToolTypeMatched);
+            Log.d("ToolDebug", "当前装备: " + activity.currentEquip + ", 耐久度: " + currentDurability + ", 工具加成: +" + toolBonus);
 
             if (currentDurability <= 0) {
                 Log.w("ToolDebug", "工具已损坏: " + activity.currentEquip + "，无法采集");
@@ -515,42 +526,35 @@ public class EventHandler implements View.OnClickListener {
                 return;
             }
 
-            // 只有工具类型匹配且有实际加成时才消耗耐久度
-            if (isToolTypeMatched && toolBonus > 0) {
-                // 立即更新耐久度，不等待异步任务
-                final String currentTool = activity.currentEquip;
-                // 替换AsyncTask为ExecutorService和Handler
-                executorService.execute(() -> {
-                    try {
-                        MainActivity currentActivity = getActivity();
-                        if (currentActivity != null && currentActivity.dataManager != null && currentActivity.dataManager.getDbHelper() != null) {
-                            // 直接调用useTool方法，确保耐久度正确减少
-                            currentActivity.dataManager.getDbHelper().useTool(MyApplication.currentUserId, currentTool);
+            // 只要是装备了工具，采集就会扣除耐久
+            final String currentTool = activity.currentEquip;
+            // 替换AsyncTask为ExecutorService和Handler
+            executorService.execute(() -> {
+                try {
+                    MainActivity currentActivity = getActivity();
+                    if (currentActivity != null && currentActivity.dataManager != null && currentActivity.dataManager.getDbHelper() != null) {
+                        // 直接调用useTool方法，确保耐久度正确减少
+                        currentActivity.dataManager.getDbHelper().useTool(MyApplication.currentUserId, currentTool);
 
-                            // 在后台计算后，通过Handler更新UI
-                            final int updatedDurability = currentActivity.dataManager.getDbHelper().getDurability(MyApplication.currentUserId, currentTool);
-                            mainHandler.post(() -> {
-                                MainActivity uiActivity = getActivity();
-                                if (uiActivity != null) {
-                                    if (updatedDurability <= 0) {
-                                        uiActivity.currentEquip = "无";
-                                        uiActivity.dataManager.getDbHelper().updateToolEquipStatus(MyApplication.currentUserId, uiActivity.currentEquip, false);
-                                    }
-                                    if (uiActivity.uiUpdater != null) {
-                                        uiActivity.uiUpdater.refreshEquipStatus();
-                                    }
+                        // 在后台计算后，通过Handler更新UI
+                        final int updatedDurability = currentActivity.dataManager.getDbHelper().getDurability(MyApplication.currentUserId, currentTool);
+                        mainHandler.post(() -> {
+                            MainActivity uiActivity = getActivity();
+                            if (uiActivity != null) {
+                                if (updatedDurability <= 0) {
+                                    uiActivity.currentEquip = "无";
+                                    uiActivity.dataManager.getDbHelper().updateToolEquipStatus(MyApplication.currentUserId, uiActivity.currentEquip, false);
                                 }
-                            });
-                        }
-                    } catch (Exception e) {
-                        Log.e("EventHandler", "更新工具耐久度失败", e);
+                                if (uiActivity.uiUpdater != null) {
+                                    uiActivity.uiUpdater.refreshEquipStatus();
+                                }
+                            }
+                        });
                     }
-                });
-            } else if (isToolTypeMatched && toolBonus == 0) {
-                Log.d("ToolDebug", "工具类型匹配但无加成，不消耗耐久度: " + activity.currentEquip + " -> " + areaType);
-            } else {
-                Log.d("ToolDebug", "工具类型不匹配，不消耗耐久度: " + activity.currentEquip + " -> " + areaType);
-            }
+                } catch (Exception e) {
+                    Log.e("EventHandler", "更新工具耐久度失败", e);
+                }
+            });
         }
 
         // 生成采集物品 - 使用稀有度系统
@@ -567,8 +571,13 @@ public class EventHandler implements View.OnClickListener {
             item.count *= collectionMultiplier;
         }
 
-        // 计算工具等级和区域等级匹配的额外加成
-        int levelBonus = calculateLevelBonus(activity.currentEquip, areaType);
+        // 计算工具等级高于区域等级的额外加成
+        int levelBonus = 0;
+        if (hasTool && toolLevel > areaLevel) {
+            // 工具等级 > 区域等级：获得(m-n)倍资源
+            levelBonus = toolLevel - areaLevel;
+        }
+
         int totalBonus = toolBonus + levelBonus;
 
         // 记录工具和等级加成物品
@@ -582,14 +591,14 @@ public class EventHandler implements View.OnClickListener {
 
             if (toolBonus > 0 && levelBonus > 0) {
                 bonusTipsList.add("工具加成：" + activity.currentEquip + "额外获得" + toolBonus + "个资源");
-                bonusTipsList.add("额外获得" + levelBonus + "个资源");
-                Log.i("ToolDebug", "资源加成计算: 工具加成=" + toolBonus + ", 等级匹配加成=" + levelBonus + ", 总加成=" + totalBonus);
+                bonusTipsList.add("等级优势：额外获得" + levelBonus + "个资源");
+                Log.i("ToolDebug", "资源加成计算: 工具类型加成=" + toolBonus + ", 等级优势加成=" + levelBonus + ", 总加成=" + totalBonus);
             } else if (toolBonus > 0) {
                 bonusTipsList.add("工具加成：" + activity.currentEquip + "额外获得" + toolBonus + "个资源");
-                Log.i("ToolDebug", "资源加成计算: 工具加成=" + toolBonus + ", 总加成=" + totalBonus);
+                Log.i("ToolDebug", "资源加成计算: 工具类型加成=" + toolBonus + ", 总加成=" + totalBonus);
             } else if (levelBonus > 0) {
-                bonusTipsList.add("额外获得" + levelBonus + "个资源");
-                Log.i("ToolDebug", "资源加成计算: 等级匹配加成=" + levelBonus + ", 总加成=" + totalBonus);
+                bonusTipsList.add("等级优势：额外获得" + levelBonus + "个资源");
+                Log.i("ToolDebug", "资源加成计算: 等级优势加成=" + levelBonus + ", 总加成=" + totalBonus);
             }
         }
 
@@ -945,14 +954,7 @@ public class EventHandler implements View.OnClickListener {
         });
     }
 
-    // 计算工具加成
-    private int getToolResourceBonus(String toolType) {
-        if (toolType == null) return 0;
-        if (toolType.contains("石质")) return 1;
-        if (toolType.contains("铁质")) return 2;
-        if (toolType.contains("钻石")) return 3;
-        return 0;
-    }
+
 
     // 计算体力消耗
     private int calculateStaminaCostWithBonuses(int baseCost, List<String> bonuses) {
@@ -1198,28 +1200,7 @@ public class EventHandler implements View.OnClickListener {
         }
     }
 
-    /**
-     * 检查工具等级是否足够采集当前区域
-     * @param toolType 当前装备的工具类型
-     * @param areaType 当前区域类型
-     * @return 是否满足等级要求
-     */
-    private boolean isToolLevelSufficient(String toolType, String areaType) {
-        if (toolType == null || toolType.equals("无") || areaType == null) {
-            return false;
-        }
 
-        // 获取区域等级（假设Constant中定义了区域等级映射）
-        int areaLevel = Constant.getAreaLevel(areaType);
-        // 获取工具等级（通过工具名称解析，如"石质斧头"为1级，"铁质斧头"为2级等）
-        int toolLevel = getToolLevel(toolType);
-
-        Log.d("ToolLevelCheck", "区域[" + areaType + "]等级: " + areaLevel +
-                ", 工具[" + toolType + "]等级: " + toolLevel);
-
-        // 工具等级 >= 区域等级 则满足要求
-        return toolLevel >= areaLevel;
-    }
 
     /**
      * 解析工具等级（从工具名称中提取）
@@ -1244,26 +1225,45 @@ public class EventHandler implements View.OnClickListener {
     }
 
     /**
-     * 计算工具等级与区域等级匹配的资源加成
+     * 根据新的工具类型规则计算资源加成
      * @param toolType 工具类型
      * @param areaType 区域类型
-     * @return 等级匹配加成数量
+     * @return 资源加成数量
      */
-    private int calculateLevelBonus(String toolType, String areaType) {
-        if (toolType == null || toolType.equals("无") || areaType == null) {
+    private int getToolResourceBonusByType(String toolType, String areaType) {
+        if (toolType == null || toolType.equals("无")) {
             return 0;
         }
-
-        int toolLevel = getToolLevel(toolType);
-        int areaLevel = Constant.getAreaLevel(areaType);
-        int bonus = 0;
-
-        // 工具等级高于区域等级时，每高1级增加1个加成
-        if (toolLevel > areaLevel) {
-            bonus = toolLevel - areaLevel;
-            Log.d("LevelBonus", "工具等级高于区域等级，获得加成: " + bonus +
-                    "(工具等级:" + toolLevel + ", 区域等级:" + areaLevel + ")");
+        
+        // 根据新的工具类型规则计算加成
+        if (toolType.contains("石斧") && (areaType.equals("树林") || areaType.equals("针叶林"))) {
+            return 1; // 石斧在树林、针叶林额外获得1个木头
+        } else if (toolType.contains("铁斧") && (areaType.equals("树林") || areaType.equals("针叶林"))) {
+            return 2; // 铁斧在树林、针叶林额外获得2个木头
+        } else if (toolType.contains("钻石斧") && (areaType.equals("树林") || areaType.equals("针叶林"))) {
+            return 3; // 钻石斧在树林、针叶林额外获得3个木头
+        } else if (toolType.contains("石镐") && areaType.equals("岩石区")) {
+            return 1; // 石镐在岩石区额外获得1个石头
+        } else if (toolType.contains("铁镐") && areaType.equals("岩石区")) {
+            return 2; // 铁镐在岩石区额外获得2个石头
+        } else if (toolType.contains("钻石镐") && (areaType.equals("岩石区") || areaType.equals("雪山"))) {
+            return 3; // 钻石镐在岩石区、雪山额外获得3个石头
+        } else if (toolType.contains("石镰刀") && (areaType.equals("草原") || areaType.equals("海滩") || areaType.equals("沙漠") || areaType.equals("雪原"))) {
+            return 1; // 石镰刀在草原、海滩、沙漠、雪原额外获得1个杂草
+        } else if (toolType.contains("铁镰刀") && (areaType.equals("草原") || areaType.equals("海滩") || areaType.equals("沙漠") || areaType.equals("雪原"))) {
+            return 2; // 铁镰刀在草原、海滩、沙漠、雪原额外获得2个杂草
+        } else if (toolType.contains("钻石镰刀") && (areaType.equals("草原") || areaType.equals("海滩") || areaType.equals("沙漠") || areaType.equals("雪原"))) {
+            return 3; // 钻石镰刀在草原、海滩、沙漠、雪原额外获得3个杂草
+        } else if (toolType.contains("石质鱼竿") && (areaType.equals("河流") || areaType.equals("海洋") || areaType.equals("深海") || areaType.equals("沼泽"))) {
+            return 1; // 石质鱼竿在河流、海洋、深海、沼泽额外获得1个鱼
+        } else if (toolType.contains("铁质鱼竿") && (areaType.equals("河流") || areaType.equals("海洋") || areaType.equals("深海") || areaType.equals("沼泽"))) {
+            return 2; // 铁质鱼竿在河流、海洋、深海、沼泽额外获得2个鱼
+        } else if (toolType.contains("钻石鱼竿") && (areaType.equals("河流") || areaType.equals("海洋") || areaType.equals("深海") || areaType.equals("沼泽"))) {
+            return 3; // 钻石鱼竿在河流、海洋、深海、沼泽额外获得3个鱼
         }
+        
+        return 0; // 不匹配的地形无加成
+    }
 
         return bonus;
     }
@@ -1734,13 +1734,8 @@ public class EventHandler implements View.OnClickListener {
                     return;
                 }
 
-                // 检查工具是否匹配
-                String toolType = activity.currentEquip;
-                if (!Constant.isToolSuitableForArea(toolType, areaType)) {
-                    btnCollect.setText("工具不足");
-                    btnCollect.setEnabled(false);
-                    return;
-                }
+                // 新规则：任何区域都可以空手采集或装备任何工具采集
+                // 不再检查工具限制
 
                 // 检查背包空间
                 Map<String, Integer> backpack = dbHelper.getBackpack(MyApplication.currentUserId);

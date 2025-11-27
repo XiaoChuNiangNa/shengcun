@@ -523,34 +523,10 @@ public class Constant {
 
     // 检查工具是否适用于区域
     public static boolean isToolSuitableForArea(String toolType, String areaType) {
-        // 先检查工具等级是否足够
-        int toolLevel = getToolLevel(toolType);
-        int areaLevel = getAreaLevel(areaType);
-        
-        Log.d("ToolDebug", "检查等级: toolLevel=" + toolLevel + ", areaLevel=" + areaLevel);
-        
-        if (areaLevel == AREA_LEVEL_0) {
-            Log.d("ToolDebug", "等级0区域，无需工具限制");
-            return true; // 等级0区域无需工具或任意工具都可以采集
-        } else if (areaLevel == AREA_LEVEL_1) {
-            boolean result = toolLevel >= TOOL_LEVEL_STONE; // 等级1区域需要石质或以上工具
-            Log.d("ToolDebug", "等级1区域检查: " + result + " (需要工具等级 >= " + TOOL_LEVEL_STONE + ")");
-            return result;
-        }
-        
-        // 对于等级2、3区域，先检查工具等级是否足够
-        boolean levelResult = toolLevel >= areaLevel;
-        Log.d("ToolDebug", "等级" + areaLevel + "区域等级检查: " + levelResult + " (需要工具等级 >= " + areaLevel + ")");
-        
-        if (!levelResult) {
-            return false; // 工具等级不足，无法采集
-        }
-        
-        // 如果工具等级足够，再检查工具类型是否匹配（使用新的工具分类系统）
-        boolean typeResult = ToolCategoryManager.isToolSuitableForArea(toolType, areaType);
-        Log.d("ToolDebug", "工具类型匹配检查: " + typeResult + " (工具分类匹配)");
-        
-        return typeResult; // 工具等级足够且类型匹配才允许采集
+        // 新规则：任何区域都可以空手采集或装备任何工具采集
+        // 移除了工具等级限制和工具类型限制
+        Log.d("ToolDebug", "新规则：允许空手采集任何区域，移除工具限制");
+        return true;
     }
 
     // 检查工具是否匹配区域类型（已废弃，使用ToolCategoryManager替代）
