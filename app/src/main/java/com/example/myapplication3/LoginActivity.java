@@ -63,34 +63,9 @@ public class LoginActivity extends AppCompatActivity {
             MyApplication.currentUserId = rememberedUserId;
             GameStateManager.getInstance(this).setCurrentUserId(rememberedUserId);
 
-            // 使用FLAG_ACTIVITY_CLEAR_TASK和FLAG_ACTIVITY_NEW_TASK确保不会出现多个任务栈
-            Intent intent;
-            if (rememberedUserId == MyApplication.TEST_ACCOUNT_UID) {
-                // 测试账号直接进入标题页
-                intent = new Intent(LoginActivity.this, TitleActivity.class);
-            } else {
-                // 普通账号检查是否完成过首次轮回
-                DBHelper dbHelper = DBHelper.getInstance(this);
-                boolean hasCompletedReincarnation = dbHelper.hasCompletedAnyReincarnation(rememberedUserId);
-
-                if (hasCompletedReincarnation) {
-                    // 完成过首次轮回的用户总是进入标题页
-                    intent = new Intent(LoginActivity.this, TitleActivity.class);
-                    Log.d("LoginActivity", "用户完成过首次轮回，跳转到标题页");
-                } else {
-                    // 未完成过首次轮回的用户检查游戏状态
-                    GameStateManager gameStateManager = GameStateManager.getInstance(this);
-                    if (gameStateManager.isGameStarted() && !gameStateManager.isGameEnded()) {
-                        // 游戏进行中，直接进入游戏
-                        intent = new Intent(LoginActivity.this, MainActivity.class);
-                        Log.d("LoginActivity", "游戏进行中，直接进入游戏");
-                    } else {
-                        // 游戏未开始或已结束，进入标题页
-                        intent = new Intent(LoginActivity.this, TitleActivity.class);
-                        Log.d("LoginActivity", "游戏未开始或已结束，进入标题页");
-                    }
-                }
-            }
+            // 所有用户都跳转到标题页
+            Intent intent = new Intent(LoginActivity.this, TitleActivity.class);
+            Log.d("LoginActivity", "用户登录后跳转到标题页");
 
             // 设置Intent标志，清除当前任务栈并创建新任务
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -193,47 +168,10 @@ public class LoginActivity extends AppCompatActivity {
         // 创建Intent并设置合适的标志
         Intent intent;
 
-        // 测试账号特殊处理
-        if (userId == MyApplication.TEST_ACCOUNT_UID) {
-            Toast.makeText(this, "管理员账号登录成功", Toast.LENGTH_SHORT).show();
-            intent = new Intent(LoginActivity.this, TitleActivity.class);
-        } else {
-            Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show();
-
-            // 检查是否完成过首次轮回
-            DBHelper dbHelper = DBHelper.getInstance(this);
-            boolean hasCompletedReincarnation = dbHelper.hasCompletedAnyReincarnation(userId);
-
-            if (hasCompletedReincarnation) {
-                // 完成过首次轮回的用户跳转到标题页
-                intent = new Intent(LoginActivity.this, TitleActivity.class);
-                Log.d("LoginActivity", "用户完成过首次轮回，登录后跳转到标题页");
-            } else {
-                // 未完成过首次轮回的用户进入游戏
-                // 生成随机出生点
-                int[] spawnPoint = chooseRandomSpawnPoint();
-
-                // 检查Activity状态
-                if (isFinishing() || isDestroyed()) {
-                    return;
-                }
-
-                // 设置游戏开始状态
-                GameStateManager gameStateManager = GameStateManager.getInstance(this);
-                gameStateManager.setGameStarted(true);
-                gameStateManager.setCurrentUserId(userId);
-
-                // 检查Activity状态
-                if (isFinishing() || isDestroyed()) {
-                    return;
-                }
-
-                // 跳转到MainActivity并传递出生点坐标
-                intent = new Intent(LoginActivity.this, MainActivity.class);
-                intent.putExtra("SPAWN_X", spawnPoint[0]);
-                intent.putExtra("SPAWN_Y", spawnPoint[1]);
-            } // 闭合hasCompletedReincarnation的else分支
-        } // 闭合userId的else分支
+        // 所有用户都跳转到标题页
+        Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show();
+        intent = new Intent(LoginActivity.this, TitleActivity.class);
+        Log.d("LoginActivity", "用户登录后跳转到标题页");
 
         // 重要：设置Intent标志，清除当前任务栈并创建新任务
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);

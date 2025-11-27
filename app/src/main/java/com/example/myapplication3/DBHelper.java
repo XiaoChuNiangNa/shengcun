@@ -1031,10 +1031,9 @@ public class DBHelper extends SQLiteOpenHelper {
             
             // 只有在SharedPreferences中没有难度设置时，才使用自动判断逻辑
             if (difficulty == null || difficulty.isEmpty() || "默认值".equals(difficulty)) {
-                // 修改逻辑：无论是新玩家还是老玩家，都默认使用简单难度
-                // 只有用户主动选择其他难度时才会切换
-                difficulty = Constant.DIFFICULTY_EASY;
-                Log.d("DBHelper", "初始化用户数据: 设置默认难度为简单，用户ID: " + userId);
+                // 改为普通难度作为默认选项，让用户自由选择
+                difficulty = Constant.DIFFICULTY_NORMAL;
+                Log.d("DBHelper", "初始化用户数据: 设置默认难度为普通，用户ID: " + userId);
             }
             
             userStatus.put("difficulty", difficulty);

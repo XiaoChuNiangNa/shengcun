@@ -39,9 +39,6 @@ public class DifficultyActivity extends BaseActivity implements View.OnClickList
         btnHard.setOnClickListener(this);
         btnSave.setOnClickListener(this);
         btnBack.setOnClickListener(v -> finish());
-
-        // 初始化难度解锁检查
-        checkDifficultyUnlocks();
     }
 
     private void loadDifficultyData() {
@@ -49,9 +46,9 @@ public class DifficultyActivity extends BaseActivity implements View.OnClickList
         Map<String, Object> userStatus = dbHelper.getUserStatus(MyApplication.currentUserId);
         difficulty = (String) userStatus.get("difficulty");
 
-        // 设置默认难度为简单
+        // 如果没有难度设置，让用户自由选择
         if (difficulty == null || difficulty.isEmpty()) {
-            difficulty = Constant.DIFFICULTY_EASY;
+            difficulty = Constant.DIFFICULTY_NORMAL; // 改为普通作为默认选项
         }
 
         updateDifficultyDisplay();
@@ -129,37 +126,5 @@ public class DifficultyActivity extends BaseActivity implements View.OnClickList
         }
     }
 
-    // 检查难度解锁状态
-    private void checkDifficultyUnlocks() {
-        // 确保userId有效（继承自BaseActivity，需先初始化）
-        if (userId <= 0) {
-            btnNormal.setEnabled(false);
-            btnNormal.setAlpha(0.5f);
-            btnHard.setEnabled(false);
-            btnHard.setAlpha(0.5f);
-            btnNormal.setOnClickListener(v -> showToast("用户未登录"));
-            btnHard.setOnClickListener(v -> showToast("用户未登录"));
-            return;
-        }
 
-        // 检查是否已完成首次轮回
-        boolean hasCompletedFirstReincarnation = dbHelper.hasCompletedAnyReincarnation(userId);
-        
-        // 如果没有完成首次轮回，只能选择简单难度
-        if (!hasCompletedFirstReincarnation) {
-            btnNormal.setEnabled(false);
-            btnNormal.setAlpha(0.5f);
-            btnHard.setEnabled(false);
-            btnHard.setAlpha(0.5f);
-            btnNormal.setOnClickListener(v ->
-                    showToast("需完成首次轮回后才能解锁其他难度")
-            );
-            btnHard.setOnClickListener(v ->
-                    showToast("需完成首次轮回后才能解锁其他难度")
-            );
-            Log.d("DifficultyActivity", "用户未完成首次轮回，锁定为简单难度");
-        } else {
-            Log.d("DifficultyActivity", "用户已完成首次轮回，解锁所有难度");
-        }
-    }
 }
