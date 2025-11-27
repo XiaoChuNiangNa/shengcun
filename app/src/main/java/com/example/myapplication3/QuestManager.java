@@ -592,6 +592,92 @@ public class QuestManager {
         
         return sb.toString();
     }
+    
+    /**
+     * 获取当前任务的详细进度信息
+     */
+    public String getCurrentTaskProgress(int userId) {
+        UserQuestData userData = getUserQuestData(userId);
+        Quest currentQuest = userData.currentActiveQuest;
+        
+        if (currentQuest == null) {
+            return "无任务";
+        }
+        
+        if (currentQuest.isCompleted()) {
+            return "已完成";
+        }
+        
+        Map<String, Integer> progress = currentQuest.getCurrentProgress();
+        Map<String, Integer> requirements = currentQuest.getRequirements();
+        
+        if (requirements.isEmpty()) {
+            return "进行中";
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Integer> req : requirements.entrySet()) {
+            String itemName = req.getKey();
+            int required = req.getValue();
+            int current = progress.getOrDefault(itemName, 0);
+            sb.append("(").append(current).append("/").append(required).append(")");
+            break;
+        }
+        
+        return sb.toString();
+    }
+    
+    /**
+     * 获取当前任务的简短描述（用于按钮显示）
+     */
+    public String getCurrentTaskDescription(int userId) {
+        UserQuestData userData = getUserQuestData(userId);
+        Quest currentQuest = userData.currentActiveQuest;
+        
+        if (currentQuest == null) {
+            return "暂无任务";
+        }
+        
+        return currentQuest.getDescription();
+    }
+    
+    /**
+     * 获取当前任务的标题（用于按钮显示）
+     */
+    public String getCurrentTaskTitle(int userId) {
+        UserQuestData userData = getUserQuestData(userId);
+        Quest currentQuest = userData.currentActiveQuest;
+        
+        if (currentQuest == null) {
+            return "任务面板";
+        }
+        
+        return currentQuest.getTitle();
+    }
+    
+    /**
+     * 获取当前任务的状态文本
+     */
+    public String getCurrentTaskStatusText(int userId) {
+        UserQuestData userData = getUserQuestData(userId);
+        Quest currentQuest = userData.currentActiveQuest;
+        int questStatus = getCurrentQuestStatus(userId);
+        
+        if (currentQuest == null) {
+            return "无任务";
+        }
+        
+        switch (questStatus) {
+            case QUEST_STATUS_CLAIMABLE:
+                return "完成";  // 任务已完成但未领取奖励，只显示"完成"
+            case QUEST_STATUS_ACTIVE:
+                return "进行中";
+            case QUEST_STATUS_COMPLETED:
+                return "完成";  // 已领取奖励，也只显示"完成"
+            default:
+                return "未开始";
+        }
+    }
 
     /**
      * 获取单例实例（无Context版本）

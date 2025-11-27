@@ -192,51 +192,53 @@ public class WildAnimalEncounterManager {
      */
     private String getCurrentDifficulty() {
         try {
-            // 获取当前用户的难度设置
-            Context context = MyApplication.getAppContext();
-            if (context != null) {
-                DBHelper dbHelper = DBHelper.getInstance(context);
-                Map<String, Object> userStatus = dbHelper.getUserStatus(MyApplication.currentUserId);
-                String difficulty = (String) userStatus.get("difficulty");
-                
-                if (difficulty == null || difficulty.isEmpty()) {
-                    // 检查是否是第一次玩：检查是否有已完成的任务
-                    boolean isFirstTimePlaying = dbHelper.getCompletedQuests(MyApplication.currentUserId).isEmpty();
-                    if (isFirstTimePlaying) {
-                        // 第一次玩使用简单难度
-                        difficulty = Constant.DIFFICULTY_EASY;
-                        Log.d(TAG, "检测到第一次玩，设置难度为简单");
-                    } else {
-                        // 老玩家使用普通难度
-                        difficulty = Constant.DIFFICULTY_NORMAL;
-                        Log.d(TAG, "检测到老玩家，设置难度为普通");
-                    }
-                }
-                
-                Log.d(TAG, "当前难度: " + difficulty + " (已根据玩家状态智能设置)");
-                return difficulty;
-            } else {
-                // 无法获取应用上下文时，使用一个更简单的方法
-                // 如果是第一次采集（采集次数为0），认为是第一次玩
-                // 这里使用一个简单的启发式方法
-                if (isFirstTimePlaying()) {
-                    Log.w(TAG, "无法获取应用上下文，但检测到第一次玩，使用简单难度");
-                    return Constant.DIFFICULTY_EASY;
-                } else {
-                    Log.w(TAG, "无法获取应用上下文，检测到老玩家，使用普通难度");
-                    return Constant.DIFFICULTY_NORMAL;
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "获取难度设置失败: " + e.getMessage());
-            // 错误时使用简单启发式方法
-            if (isFirstTimePlaying()) {
-                Log.w(TAG, "获取难度失败，但检测到第一次玩，使用简单难度");
-                return Constant.DIFFICULTY_EASY;
-            } else {
-                Log.w(TAG, "获取难度失败，检测到老玩家，使用普通难度");
+            // 检查用户ID是否有效
+            if (MyApplication.currentUserId == -1) {
+                Log.e(TAG, "用户ID无效: " + MyApplication.currentUserId);
                 return Constant.DIFFICULTY_NORMAL;
             }
+            
+            // 尝试获取应用上下文
+            Context context = MyApplication.getAppContext();
+            if (context == null) {
+                Log.e(TAG, "无法获取应用上下文，使用默认普通难度");
+                return Constant.DIFFICULTY_NORMAL;
+            }
+            
+            DBHelper dbHelper = DBHelper.getInstance(context);
+            Map<String, Object> userStatus = dbHelper.getUserStatus(MyApplication.currentUserId);
+            String difficulty = (String) userStatus.get("difficulty");
+            
+            if (difficulty == null || difficulty.isEmpty()) {
+                // 如果数据库中没有难度信息，重新初始化用户数据以设置正确的难度
+                Log.d(TAG, "数据库中没有难度信息，重新初始化用户数据");
+                dbHelper.initUserData(MyApplication.currentUserId);
+                
+                // 重新获取难度信息
+                userStatus = dbHelper.getUserStatus(MyApplication.currentUserId);
+                difficulty = (String) userStatus.get("difficulty");
+                
+                if (difficulty != null && !difficulty.isEmpty()) {
+                    Log.d(TAG, "重新初始化后获取到难度: " + difficulty);
+                } else {
+                    // 如果还是没有，使用默认简单难度并强制更新
+                    difficulty = Constant.DIFFICULTY_EASY;
+                    Log.d(TAG, "仍然没有难度信息，强制设置为简单难度");
+                    dbHelper.updateDifficulty(MyApplication.currentUserId, difficulty);
+                }
+            } else {
+                // 数据库中有难度信息，直接使用
+                Log.d(TAG, "从数据库读取到难度: " + difficulty);
+            }
+            
+            double probability = getDifficultyEncounterProbability(difficulty);
+            Log.d(TAG, "最终使用难度: " + difficulty + ", 遭遇概率: " + (probability * 100) + "%");
+            return difficulty;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "获取难度设置失败: " + e.getMessage());
+            // 出错时使用普通难度作为默认值
+            return Constant.DIFFICULTY_NORMAL;
         }
     }
     
@@ -403,14 +405,5 @@ public class WildAnimalEncounterManager {
         return getDifficultyEncounterProbability(getCurrentDifficulty());
     }
     
-    /**
-     * 简单判断是否是第一次玩
-     * 使用一个简单的启发式方法：如果采集次数很少，认为是第一次玩
-     */
-    private boolean isFirstTimePlaying() {
-        // 这是一个简化的判断方法
-        // 实际上应该通过数据库查询玩家状态
-        // 这里暂时返回true，表示第一次玩
-        return true;
-    }
+
 }

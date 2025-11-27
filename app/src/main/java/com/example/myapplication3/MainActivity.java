@@ -291,7 +291,7 @@ public class MainActivity extends BaseActivity {
             // 加载难度设置
             if (userStatus.containsKey("difficulty")) {
                 difficulty = (String) userStatus.get("difficulty");
-//                Log.d("GameLoading", "从数据库加载的难度: " + difficulty);
+                Log.d("GameLoading", "从数据库加载的难度: " + difficulty);
             }
             
             // 加载存档的坐标数据

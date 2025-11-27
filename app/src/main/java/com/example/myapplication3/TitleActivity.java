@@ -215,24 +215,24 @@ public class TitleActivity extends AppCompatActivity implements View.OnClickList
         // 设置难度选项的可用性
         // 简单难度始终可用
         rbEasy.setEnabled(true);
-        rbEasy.setText("简单模式");
+        rbEasy.setText("简单");
         
         // 普通难度：需要简单模式通关后解锁
         if (isEasyCleared) {
             rbNormal.setEnabled(true);
-            rbNormal.setText("普通模式");
+            rbNormal.setText("普通");
         } else {
             rbNormal.setEnabled(false);
-            rbNormal.setText("普通模式 (需简单模式通关)");
+            rbNormal.setText("普通\n (未解锁)");
         }
         
         // 困难难度：需要普通模式通关后解锁
         if (isNormalCleared) {
             rbHard.setEnabled(true);
-            rbHard.setText("困难模式");
+            rbHard.setText("困难");
         } else {
             rbHard.setEnabled(false);
-            rbHard.setText("困难模式 (需普通模式通关)");
+            rbHard.setText("困难\n (未解锁)");
         }
 
         // 设置默认选中普通难度，与默认值保持一致

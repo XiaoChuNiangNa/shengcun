@@ -2,6 +2,7 @@ package com.example.myapplication3;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -185,7 +186,12 @@ public class ReincarnationActivity extends BaseActivity {
         // 4. 更新轮回次数统计
         dbHelper.incrementReincarnationTimes(userId);
         
-        // 5. 计算并更新所有成就进度（在轮回后）
+        // 5. 移除新玩家标签：添加一个初始任务完成记录
+        // 完成一个欢迎任务，标记用户不再是新玩家
+        questManager.completeQuest(userId, 1); // 假设任务ID 1是欢迎任务
+        Log.d("ReincarnationActivity", "移除新玩家标签，完成欢迎任务");
+        
+        // 6. 计算并更新所有成就进度（在轮回后）
         AchievementManager achievementManager = AchievementManager.getInstance(dbHelper);
         achievementManager.calculateAchievementProgressAfterReincarnation(userId);
 

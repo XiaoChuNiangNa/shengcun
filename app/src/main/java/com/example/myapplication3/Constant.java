@@ -18,7 +18,7 @@ public class Constant {
     
     // 数据库配置
     public static final String DB_NAME = "MagicDomainDB";
-    public static final int DB_VERSION = 31;
+    public static final int DB_VERSION = 32;
 
     // 生存指标初始值
     public static final int INIT_LIFE = 100;//生命

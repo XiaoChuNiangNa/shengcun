@@ -8,6 +8,7 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -61,7 +62,7 @@ public class EventHandler implements View.OnClickListener {
             View btnDown = activity.findViewById(R.id.btn_down);
             View btnLeft = activity.findViewById(R.id.btn_left);
             View btnRight = activity.findViewById(R.id.btn_right);
-            View btnQuestPanel = activity.findViewById(R.id.btn_quest_panel);
+            View btnQuestPanel = activity.findViewById(R.id.quest_panel);
 
             if (btnCollect != null) btnCollect.setOnClickListener(this);
             if (btnUp != null) btnUp.setOnClickListener(v -> move(0, -1));
@@ -1057,7 +1058,7 @@ public class EventHandler implements View.OnClickListener {
         } else if (id == R.id.btn_functions) {
             activity.dataManager.saveAllCriticalData();
             activity.startActivity(new Intent(activity, FunctionListActivity.class));
-        } else if (id == R.id.btn_quest_panel) {
+        } else if (id == R.id.quest_panel) {
             handleQuestButtonClick();
         }
     }
@@ -1083,14 +1084,13 @@ public class EventHandler implements View.OnClickListener {
         }
 
         if (questStatus == QuestManager.QUEST_STATUS_CLAIMABLE) {
-            // 可领取状态：点击领取奖励
+            // 可领取状态：直接领取奖励，不弹窗
             boolean success = questManager.claimCurrentQuest(MyApplication.currentUserId);
             if (success) {
-                // 领取成功，显示奖励信息
-                String rewardDescription = questManager.getCurrentQuestRewardDescription(MyApplication.currentUserId);
-                showRewardDialog(rewardDescription);
+                // 领取成功后显示简单提示
+                Toast.makeText(activity, "任务完成，奖励已发放", Toast.LENGTH_SHORT).show();
 
-                // 更新任务按钮显示
+                // 立即更新任务按钮显示，切换到下一个任务
                 updateQuestButtonDisplay();
 
                 Log.d("QuestHandler", "任务领取成功: " + currentQuest.getTitle());
@@ -1098,54 +1098,16 @@ public class EventHandler implements View.OnClickListener {
                 Toast.makeText(activity, "领取失败，请重试", Toast.LENGTH_SHORT).show();
             }
         } else if (questStatus == QuestManager.QUEST_STATUS_ACTIVE) {
-            // 活动状态：显示任务详情
-            showQuestDetailsDialog();
+            // 活动状态：显示进度提示，不弹详情窗
+            String progressInfo = questManager.getCurrentTaskProgress(MyApplication.currentUserId);
+            Toast.makeText(activity, "任务进度: " + progressInfo, Toast.LENGTH_SHORT).show();
         } else {
             // 已完成或无任务状态
-            Toast.makeText(activity, "任务已完成", Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, "已完成或无任务", Toast.LENGTH_SHORT).show();
         }
     }
 
-    /**
-     * 显示奖励对话框
-     */
-    private void showRewardDialog(String rewardDescription) {
-        MainActivity activity = getActivity();
-        if (activity == null) return;
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle("任务奖励")
-                .setMessage("恭喜您完成任务！获得奖励：\n\n" + rewardDescription)
-                .setPositiveButton("确定", null)
-                .show();
-    }
-
-    /**
-     * 显示任务详情对话框
-     */
-    private void showQuestDetailsDialog() {
-        MainActivity activity = getActivity();
-        if (activity == null) return;
-
-        QuestManager questManager = QuestManager.getInstance(activity);
-        Quest currentQuest = questManager.getCurrentActiveQuest(MyApplication.currentUserId);
-
-        if (currentQuest == null) {
-            return;
-        }
-
-        StringBuilder message = new StringBuilder();
-        message.append(currentQuest.getTitle()).append("\n\n");
-        message.append("任务描述：").append(currentQuest.getDescription()).append("\n\n");
-        message.append("任务进度：\n").append(currentQuest.getProgressDescription()).append("\n\n");
-        message.append("奖励：\n").append(questManager.getCurrentQuestRewardDescription(MyApplication.currentUserId));
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle("任务详情")
-                .setMessage(message.toString())
-                .setPositiveButton("确定", null)
-                .show();
-    }
 
     /**
      * 更新任务按钮显示
@@ -1157,9 +1119,14 @@ public class EventHandler implements View.OnClickListener {
         // 获取任务管理器
         QuestManager questManager = QuestManager.getInstance(activity);
 
-        // 获取任务按钮
-        Button btnQuest = activity.findViewById(R.id.btn_quest_panel);
-        if (btnQuest == null) {
+        // 获取任务面板各个组件
+        TextView questTitle = activity.findViewById(R.id.quest_title);
+        TextView questDescription = activity.findViewById(R.id.quest_description);
+        TextView questProgress = activity.findViewById(R.id.quest_progress);
+        TextView questStatus = activity.findViewById(R.id.quest_status);
+        
+        if (questTitle == null || questDescription == null || 
+            questProgress == null || questStatus == null) {
             return;
         }
 
@@ -1167,33 +1134,48 @@ public class EventHandler implements View.OnClickListener {
         boolean hasNewbieQuest = questManager.hasUnfinishedNewbieQuest(MyApplication.currentUserId);
         int currentQuestStatus = questManager.getCurrentQuestStatus(MyApplication.currentUserId);
 
-        if (hasNewbieQuest) {
-            btnQuest.setText("新手任务");
-            // 新手任务未完成时，显示提示色
-            btnQuest.setTextColor(activity.getResources().getColor(R.color.quest_newbie_color));
-        } else {
+        if (hasNewbieQuest || currentQuestStatus != QuestManager.QUEST_STATUS_HIDDEN) {
+            // 设置任务标题
+            String title = questManager.getCurrentTaskTitle(MyApplication.currentUserId);
+            questTitle.setText(title);
+            
+            // 设置任务描述
+            String description = questManager.getCurrentTaskDescription(MyApplication.currentUserId);
+            questDescription.setText(description);
+            
+            // 设置任务进度
+            String progress = questManager.getCurrentTaskProgress(MyApplication.currentUserId);
+            questProgress.setText(progress);
+            
+            // 设置任务状态
+            String statusText = questManager.getCurrentTaskStatusText(MyApplication.currentUserId);
+            questStatus.setText(statusText);
+            
+            // 根据状态设置颜色
             if (currentQuestStatus == QuestManager.QUEST_STATUS_CLAIMABLE) {
-                // 可领取状态：显示领取提示
-                btnQuest.setText("任务可领取");
-                btnQuest.setTextColor(activity.getResources().getColor(R.color.quest_claimable_color));
-                // 显示红点提示
+                questProgress.setTextColor(activity.getResources().getColor(android.R.color.holo_green_dark));
+                questStatus.setTextColor(activity.getResources().getColor(android.R.color.holo_green_dark));
                 showQuestRedDot(true);
             } else if (currentQuestStatus == QuestManager.QUEST_STATUS_ACTIVE) {
-                // 活动状态：显示任务名称
-                Quest currentQuest = questManager.getCurrentActiveQuest(MyApplication.currentUserId);
-                if (currentQuest != null) {
-                    btnQuest.setText(currentQuest.getTitle().length() > 6
-                            ? currentQuest.getTitle().substring(0, 6) + "..."
-                            : currentQuest.getTitle());
-                    btnQuest.setTextColor(activity.getResources().getColor(R.color.quest_active_color));
-                }
+                questProgress.setTextColor(activity.getResources().getColor(R.color.white));
+                questStatus.setTextColor(activity.getResources().getColor(R.color.white));
+                showQuestRedDot(false);
+            } else if (currentQuestStatus == QuestManager.QUEST_STATUS_COMPLETED) {
+                questProgress.setTextColor(activity.getResources().getColor(android.R.color.holo_green_dark));
+                questStatus.setTextColor(activity.getResources().getColor(android.R.color.holo_green_dark));
                 showQuestRedDot(false);
             } else {
-                // 无活跃任务
-                btnQuest.setText("任务面板");
-                btnQuest.setTextColor(activity.getResources().getColor(R.color.default_text_color));
+                questProgress.setTextColor(activity.getResources().getColor(R.color.white));
+                questStatus.setTextColor(activity.getResources().getColor(R.color.white));
                 showQuestRedDot(false);
             }
+        } else {
+            // 无任务状态
+            questTitle.setText("任务面板");
+            questDescription.setText("暂无任务");
+            questProgress.setText("(0/0)");
+            questStatus.setText("无任务");
+            showQuestRedDot(false);
         }
     }
 

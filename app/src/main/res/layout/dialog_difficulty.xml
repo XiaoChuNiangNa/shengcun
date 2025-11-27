@@ -40,7 +40,7 @@
 
             <RadioButton
                 android:id="@+id/rb_easy"
-                android:layout_width="0dp"
+                android:layout_width="20dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="简单"
@@ -67,7 +67,7 @@
 
             <RadioButton
                 android:id="@+id/rb_normal"
-                android:layout_width="0dp"
+                android:layout_width="20dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="普通"
@@ -95,7 +95,7 @@
 
             <RadioButton
                 android:id="@+id/rb_hard"
-                android:layout_width="0dp"
+                android:layout_width="20dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="困难"

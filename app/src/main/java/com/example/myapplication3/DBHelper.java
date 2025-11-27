@@ -254,6 +254,17 @@ public class DBHelper extends SQLiteOpenHelper {
                 "completion_time LONG," +
                 "UNIQUE(user_id)" +
                 ")");
+
+        // 传送门位置表
+        db.execSQL("CREATE TABLE IF NOT EXISTS portal_locations (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "x INTEGER NOT NULL," +
+                "y INTEGER NOT NULL," +
+                "target_map TEXT NOT NULL," +
+                "target_x INTEGER NOT NULL," +
+                "target_y INTEGER NOT NULL," +
+                "UNIQUE(x, y)" +
+                ")");
     }
 
     // achievements表在onCreate中已创建，此处移除重复方法
@@ -636,6 +647,24 @@ public class DBHelper extends SQLiteOpenHelper {
             }
         }
 
+        if (oldVersion < 32) {
+            // 版本32升级逻辑：创建portal_locations表
+            try {
+                db.execSQL("CREATE TABLE IF NOT EXISTS portal_locations (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        "x INTEGER NOT NULL," +
+                        "y INTEGER NOT NULL," +
+                        "target_map TEXT NOT NULL," +
+                        "target_x INTEGER NOT NULL," +
+                        "target_y INTEGER NOT NULL," +
+                        "UNIQUE(x, y)" +
+                        ")");
+                Log.d("DBHelper", "成功创建portal_locations表");
+            } catch (Exception e) {
+                Log.e("DBHelper", "创建portal_locations表失败: " + e.getMessage());
+            }
+        }
+
     }
 
     /**
@@ -985,13 +1014,13 @@ public class DBHelper extends SQLiteOpenHelper {
             userStatus.put("sound_status", 1);
             
             // 关键修复：优先从SharedPreferences读取用户选择的难度
-            String difficulty = Constant.DIFFICULTY_NORMAL; // 默认值
+            String difficulty = Constant.DIFFICULTY_EASY; // 默认值改为简单
             try {
                 // 获取SharedPreferences需要Context，通过MyApplication获取
                 android.content.Context context = MyApplication.getAppContext();
                 if (context != null) {
                     android.content.SharedPreferences sp = context.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
-                    difficulty = sp.getString("difficulty", Constant.DIFFICULTY_NORMAL);
+                    difficulty = sp.getString("difficulty", Constant.DIFFICULTY_EASY);
                     Log.d("DBHelper", "从SharedPreferences读取难度: " + difficulty);
                 } else {
                     Log.w("DBHelper", "无法获取应用上下文，使用默认难度");
@@ -1002,17 +1031,10 @@ public class DBHelper extends SQLiteOpenHelper {
             
             // 只有在SharedPreferences中没有难度设置时，才使用自动判断逻辑
             if (difficulty == null || difficulty.isEmpty() || "默认值".equals(difficulty)) {
-                // 检测是否是第一次玩：检查是否有已完成的任务
-                boolean isFirstTimePlaying = getCompletedQuests(userId).isEmpty();
-                if (isFirstTimePlaying) {
-                    // 第一次玩使用简单难度
-                    difficulty = Constant.DIFFICULTY_EASY;
-                    Log.d("DBHelper", "初始化用户数据: 第一次玩，设置难度为简单");
-                } else {
-                    // 老玩家使用普通难度
-                    difficulty = Constant.DIFFICULTY_NORMAL;
-                    Log.d("DBHelper", "初始化用户数据: 老玩家，设置难度为普通");
-                }
+                // 修改逻辑：无论是新玩家还是老玩家，都默认使用简单难度
+                // 只有用户主动选择其他难度时才会切换
+                difficulty = Constant.DIFFICULTY_EASY;
+                Log.d("DBHelper", "初始化用户数据: 设置默认难度为简单，用户ID: " + userId);
             }
             
             userStatus.put("difficulty", difficulty);
@@ -1318,6 +1340,21 @@ public class DBHelper extends SQLiteOpenHelper {
             // if (db != null && db.isOpen()) db.close();
         }
         return status;
+    }
+
+    // 更新用户难度设置
+    public void updateDifficulty(int userId, String difficulty) {
+        SQLiteDatabase db = getWritableDatabase();
+        try {
+            ContentValues values = new ContentValues();
+            values.put("difficulty", difficulty);
+            int rowsAffected = db.update("user_status", values, "user_id=?", 
+                    new String[]{String.valueOf(userId)});
+            Log.d("DBHelper", "更新用户 " + userId + " 难度为: " + difficulty + 
+                    ", 影响行数: " + rowsAffected);
+        } catch (Exception e) {
+            Log.e("DBHelper", "更新难度设置失败: " + e.getMessage());
+        }
     }
 
     // 更新用户状态
@@ -3773,6 +3810,37 @@ public class DBHelper extends SQLiteOpenHelper {
             Log.e("DBHelper", "更新贸易次数失败", e);
             return 0;
         }
+    }
+
+    /**
+     * 检查用户是否已完成过轮回
+     * @param userId 用户ID
+     * @return 是否已完成至少一次轮回
+     */
+    public boolean hasCompletedAnyReincarnation(int userId) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = null;
+        try {
+            cursor = db.query("user_status", 
+                    new String[]{"reincarnation_times"}, 
+                    "user_id=?", 
+                    new String[]{String.valueOf(userId)}, 
+                    null, null, null);
+            
+            if (cursor.moveToFirst()) {
+                int reincarnationTimes = cursor.getInt(cursor.getColumnIndexOrThrow("reincarnation_times"));
+                boolean hasCompleted = reincarnationTimes > 0;
+                Log.d("DBHelper", "用户 " + userId + " 轮回次数: " + reincarnationTimes + ", 是否完成过轮回: " + hasCompleted);
+                return hasCompleted;
+            }
+        } catch (Exception e) {
+            Log.e("DBHelper", "检查轮回状态失败: " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return false;
     }
 
     /**

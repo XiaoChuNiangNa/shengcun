@@ -14,11 +14,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import java.lang.ref.WeakReference;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 public class LoginActivity extends AppCompatActivity {
@@ -27,6 +24,9 @@ public class LoginActivity extends AppCompatActivity {
     private EditText etUsername, etPassword;
     private Button btnLoginRegister;
     private CheckBox cbRememberMe; // 记住我复选框
+
+    // 定义一个静态成员变量来保存当前运行的AsyncTask
+    private LoginAsyncTask loginAsyncTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,28 +58,40 @@ public class LoginActivity extends AppCompatActivity {
         if (rememberedUserId != -1 && !isFinishing() && !isDestroyed()) {
             // 自动登录处理
             Log.d("LoginActivity", "检测到记住的用户ID: " + rememberedUserId + "，尝试自动登录");
-            
+
             // 保存用户ID到应用全局变量
             MyApplication.currentUserId = rememberedUserId;
             GameStateManager.getInstance(this).setCurrentUserId(rememberedUserId);
-            
+
             // 使用FLAG_ACTIVITY_CLEAR_TASK和FLAG_ACTIVITY_NEW_TASK确保不会出现多个任务栈
             Intent intent;
             if (rememberedUserId == MyApplication.TEST_ACCOUNT_UID) {
                 // 测试账号直接进入标题页
                 intent = new Intent(LoginActivity.this, TitleActivity.class);
             } else {
-                // 普通账号检查游戏状态
-                GameStateManager gameStateManager = GameStateManager.getInstance(this);
-                if (gameStateManager.isGameStarted() && !gameStateManager.isGameEnded()) {
-                    // 游戏进行中，直接进入游戏
-                    intent = new Intent(LoginActivity.this, MainActivity.class);
-                } else {
-                    // 游戏未开始或已结束，进入标题页
+                // 普通账号检查是否完成过首次轮回
+                DBHelper dbHelper = DBHelper.getInstance(this);
+                boolean hasCompletedReincarnation = dbHelper.hasCompletedAnyReincarnation(rememberedUserId);
+
+                if (hasCompletedReincarnation) {
+                    // 完成过首次轮回的用户总是进入标题页
                     intent = new Intent(LoginActivity.this, TitleActivity.class);
+                    Log.d("LoginActivity", "用户完成过首次轮回，跳转到标题页");
+                } else {
+                    // 未完成过首次轮回的用户检查游戏状态
+                    GameStateManager gameStateManager = GameStateManager.getInstance(this);
+                    if (gameStateManager.isGameStarted() && !gameStateManager.isGameEnded()) {
+                        // 游戏进行中，直接进入游戏
+                        intent = new Intent(LoginActivity.this, MainActivity.class);
+                        Log.d("LoginActivity", "游戏进行中，直接进入游戏");
+                    } else {
+                        // 游戏未开始或已结束，进入标题页
+                        intent = new Intent(LoginActivity.this, TitleActivity.class);
+                        Log.d("LoginActivity", "游戏未开始或已结束，进入标题页");
+                    }
                 }
             }
-            
+
             // 设置Intent标志，清除当前任务栈并创建新任务
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
@@ -87,9 +99,6 @@ public class LoginActivity extends AppCompatActivity {
             return; // 不再执行后续代码
         }
     }
-
-    // 定义一个静态成员变量来保存当前运行的AsyncTask
-    private LoginAsyncTask loginAsyncTask;
 
     // 处理登录或注册逻辑
     private void handleLoginOrRegister() {
@@ -111,15 +120,130 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         String encryptedPassword = encryptPassword(password);
-        
+
         // 取消之前可能还在运行的任务
         if (loginAsyncTask != null) {
             loginAsyncTask.cancel(true);
         }
-        
+
         // 创建并执行新的AsyncTask
         loginAsyncTask = new LoginAsyncTask(this, username, encryptedPassword);
         loginAsyncTask.execute();
+    }
+
+    // 密码加密方法（调用前先定义）
+    private String encryptPassword(String password) {
+        // 调用EncryptionUtils的静态方法，确保加密逻辑统一
+        return EncryptionUtils.encryptPassword(password);
+    }
+
+    // 随机出生点选择方法（调用前先定义）
+    private int[] chooseRandomSpawnPoint() {
+        GameMap gameMap = GameMap.getInstance(this);
+        List<int[]> validSpawnPoints = new ArrayList<>();
+        // 遍历地图范围内所有坐标，通过统一校验筛选
+        for (int y = Constant.MAP_MIN; y <= Constant.MAP_MAX; y++) {
+            for (int x = Constant.MAP_MIN; x <= Constant.MAP_MAX; x++) {
+                if (gameMap.isValidCoord(x, y)) { // 直接使用统一校验
+                    validSpawnPoints.add(new int[]{x, y});
+                }
+            }
+        }
+        // 随机选择（兜底逻辑不变）
+        if (!validSpawnPoints.isEmpty()) {
+            Random random = new Random();
+            return validSpawnPoints.get(random.nextInt(validSpawnPoints.size()));
+        } else {
+            return new int[]{1, 1}; // 极端情况兜底，没有找到复活点时默认（1，1）
+        }
+    }
+
+    // 处理登录成功逻辑
+    private void handleLoginSuccess(int userId) {
+        // 检查Activity状态，确保在有效状态下执行操作
+        if (isFinishing() || isDestroyed()) {
+            Log.e("LoginActivity", "handleLoginSuccess: Activity已销毁，取消操作");
+            return;
+        }
+
+        // 保存用户ID到应用全局变量和GameStateManager
+        MyApplication.currentUserId = userId;
+        GameStateManager.getInstance(this).setCurrentUserId(userId);
+
+        // 处理记住登录状态
+        if (cbRememberMe.isChecked()) {
+            // 检查Activity状态
+            if (isFinishing() || isDestroyed()) {
+                return;
+            }
+
+            // 保存登录信息到SharedPreferences
+            SharedPreferences sharedPreferences = getSharedPreferences("user_info", Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putInt("user_id", userId);
+            editor.putString("username", etUsername.getText().toString());
+            editor.apply();
+        }
+
+        // 检查Activity状态
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+
+        // 创建Intent并设置合适的标志
+        Intent intent;
+
+        // 测试账号特殊处理
+        if (userId == MyApplication.TEST_ACCOUNT_UID) {
+            Toast.makeText(this, "管理员账号登录成功", Toast.LENGTH_SHORT).show();
+            intent = new Intent(LoginActivity.this, TitleActivity.class);
+        } else {
+            Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show();
+
+            // 检查是否完成过首次轮回
+            DBHelper dbHelper = DBHelper.getInstance(this);
+            boolean hasCompletedReincarnation = dbHelper.hasCompletedAnyReincarnation(userId);
+
+            if (hasCompletedReincarnation) {
+                // 完成过首次轮回的用户跳转到标题页
+                intent = new Intent(LoginActivity.this, TitleActivity.class);
+                Log.d("LoginActivity", "用户完成过首次轮回，登录后跳转到标题页");
+            } else {
+                // 未完成过首次轮回的用户进入游戏
+                // 生成随机出生点
+                int[] spawnPoint = chooseRandomSpawnPoint();
+
+                // 检查Activity状态
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+
+                // 设置游戏开始状态
+                GameStateManager gameStateManager = GameStateManager.getInstance(this);
+                gameStateManager.setGameStarted(true);
+                gameStateManager.setCurrentUserId(userId);
+
+                // 检查Activity状态
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+
+                // 跳转到MainActivity并传递出生点坐标
+                intent = new Intent(LoginActivity.this, MainActivity.class);
+                intent.putExtra("SPAWN_X", spawnPoint[0]);
+                intent.putExtra("SPAWN_Y", spawnPoint[1]);
+            } // 闭合hasCompletedReincarnation的else分支
+        } // 闭合userId的else分支
+
+        // 重要：设置Intent标志，清除当前任务栈并创建新任务
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        // 检查Activity状态
+        if (!isFinishing() && !isDestroyed()) {
+            startActivity(intent);
+            // 重要：确保在startActivity后立即调用finish()
+            finish();
+        }
     }
 
     // 将AsyncTask改为静态内部类，避免内存泄漏
@@ -147,7 +271,7 @@ public class LoginActivity extends AppCompatActivity {
             if (isCancelled()) {
                 return -1;
             }
-            
+
             // 检查用户是否存在（数据库操作）
             int userId = dbHelper.checkUserExists(username);
             if (userId != -1) {
@@ -155,7 +279,7 @@ public class LoginActivity extends AppCompatActivity {
                 if (isCancelled()) {
                     return -1;
                 }
-                
+
                 // 执行登录逻辑
                 int loginUserId = dbHelper.login(username, encryptedPassword);
                 if (loginUserId != -1) {
@@ -174,7 +298,7 @@ public class LoginActivity extends AppCompatActivity {
                 if (isCancelled()) {
                     return -1;
                 }
-                
+
                 // 执行注册逻辑
                 boolean registerSuccess = dbHelper.register(username, encryptedPassword);
                 if (registerSuccess) {
@@ -200,10 +324,10 @@ public class LoginActivity extends AppCompatActivity {
                 Log.d("LoginActivity", "Activity已不存在，取消回调处理");
                 return;
             }
-            
+
             // 清除任务引用
             activity.loginAsyncTask = null;
-            
+
             if (result != -1) {
                 activity.handleLoginSuccess(result); // 主线程处理登录成功逻辑
             } else {
@@ -215,136 +339,19 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        
+
         // 重要：取消可能正在运行的异步任务
         if (loginAsyncTask != null) {
             loginAsyncTask.cancel(true);
             loginAsyncTask = null;
         }
-        
+
         // 清理引用，避免内存泄漏
         etUsername = null;
         etPassword = null;
         btnLoginRegister = null;
         cbRememberMe = null;
-        
+
         Log.d("LoginActivity", "onDestroy: 资源已清理");
-    }
-
-    // 处理登录成功逻辑
-    private void handleLoginSuccess(int userId) {
-        // 检查Activity状态，确保在有效状态下执行操作
-        if (isFinishing() || isDestroyed()) {
-            Log.e("LoginActivity", "handleLoginSuccess: Activity已销毁，取消操作");
-            return;
-        }
-        
-        // 保存用户ID到应用全局变量和GameStateManager
-        MyApplication.currentUserId = userId;
-        GameStateManager.getInstance(this).setCurrentUserId(userId);
-        
-        // 处理记住登录状态
-        if (cbRememberMe.isChecked()) {
-            // 检查Activity状态
-            if (isFinishing() || isDestroyed()) {
-                return;
-            }
-            
-            // 保存登录信息到SharedPreferences
-            SharedPreferences sharedPreferences = getSharedPreferences("user_info", Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putInt("user_id", userId);
-            editor.putString("username", etUsername.getText().toString());
-            editor.apply();
-        }
-        
-        // 检查Activity状态
-        if (isFinishing() || isDestroyed()) {
-            return;
-        }
-        
-        // 创建Intent并设置合适的标志
-        Intent intent;
-        
-        // 测试账号特殊处理
-        if (userId == MyApplication.TEST_ACCOUNT_UID) {
-            Toast.makeText(this, "管理员账号登录成功", Toast.LENGTH_SHORT).show();
-            intent = new Intent(LoginActivity.this, TitleActivity.class);
-        } else {
-            Toast.makeText(this, "登录成功", Toast.LENGTH_SHORT).show();
-            
-            // 生成随机出生点（非测试账号）
-            int[] spawnPoint = chooseRandomSpawnPoint();
-            
-            // 检查Activity状态
-            if (isFinishing() || isDestroyed()) {
-                return;
-            }
-            
-            // 设置游戏开始状态
-            GameStateManager gameStateManager = GameStateManager.getInstance(this);
-            gameStateManager.setGameStarted(true);
-            gameStateManager.setCurrentUserId(userId);
-            
-            // 检查Activity状态
-            if (isFinishing() || isDestroyed()) {
-                return;
-            }
-            
-            // 跳转到MainActivity并传递出生点坐标
-            intent = new Intent(LoginActivity.this, MainActivity.class);
-            intent.putExtra("SPAWN_X", spawnPoint[0]);
-            intent.putExtra("SPAWN_Y", spawnPoint[1]);
-        }
-        
-        // 重要：设置Intent标志，清除当前任务栈并创建新任务
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-        
-        // 检查Activity状态
-        if (!isFinishing() && !isDestroyed()) {
-            startActivity(intent);
-            // 重要：确保在startActivity后立即调用finish()
-            finish();
-        }
-    }
-
-//    private String encryptPassword(String password) {
-//        try {
-//            MessageDigest md = MessageDigest.getInstance("SHA-256");
-//            md.update(password.getBytes());
-//            byte[] bytes = md.digest();
-//            StringBuilder sb = new StringBuilder();
-//            for (byte b : bytes) {
-//                sb.append(String.format("%02x", b));
-//            }
-//            return sb.toString();
-//        } catch (NoSuchAlgorithmException e) {
-//            e.printStackTrace();
-//            return password;
-//        }
-//    }
-
-    private String encryptPassword(String password) {
-        // 调用EncryptionUtils的静态方法，确保加密逻辑统一
-        return EncryptionUtils.encryptPassword(password);
-    }
-    private int[] chooseRandomSpawnPoint() {
-            GameMap gameMap = GameMap.getInstance(this);
-            List<int[]> validSpawnPoints = new ArrayList<>();
-            // 遍历地图范围内所有坐标，通过统一校验筛选
-            for (int y = Constant.MAP_MIN; y <= Constant.MAP_MAX; y++) {
-                for (int x = Constant.MAP_MIN; x <= Constant.MAP_MAX; x++) {
-                    if (gameMap.isValidCoord(x, y)) { // 直接使用统一校验
-                        validSpawnPoints.add(new int[]{x, y});
-                    }
-                }
-            }
-            // 随机选择（兜底逻辑不变）
-            if (!validSpawnPoints.isEmpty()) {
-                Random random = new Random();
-                return validSpawnPoints.get(random.nextInt(validSpawnPoints.size()));
-            } else {
-                return new int[]{1, 1}; // 极端情况兜底，没有找到复活点时默认（1，1）
-            }
     }
 }

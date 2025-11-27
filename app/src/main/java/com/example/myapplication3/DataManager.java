@@ -115,8 +115,8 @@ public class DataManager {
             activity.stamina = getIntValue(userStatus.get("stamina"), Constant.INIT_STAMINA);
             activity.gold = getIntValue(userStatus.get("gold"), 0);
             activity.backpackCap = getIntValue(userStatus.get("backpack_cap"), 10);
-            // 加载难度设置，如果不存在则使用默认值
-            activity.difficulty = (String) userStatus.getOrDefault("difficulty", Constant.DIFFICULTY_NORMAL);
+            // 加载难度设置，如果不存在则使用默认简单难度
+            activity.difficulty = (String) userStatus.getOrDefault("difficulty", Constant.DIFFICULTY_EASY);
             
             // 添加日志显示当前游戏难度
             Log.d("GameLoading", "从数据库加载的难度: " + activity.difficulty);
@@ -170,16 +170,10 @@ public class DataManager {
             activity.gold = 0;
             activity.backpackCap = 10;
             
-            // 从SharedPreferences读取正确的难度设置
-            android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
-            String difficultyFromPrefs = sp.getString("difficulty", Constant.DIFFICULTY_NORMAL);
-            
-            // 添加日志用于调试难度设置
-            Log.d("GameLoading", "从SharedPreferences读取的难度: " + difficultyFromPrefs);
-            
-            // 直接使用从SharedPreferences读取的值，确保与TitleActivity中保存的值一致
-            activity.difficulty = difficultyFromPrefs;
-            Log.d("GameLoading", "初始化后设置的难度: " + activity.difficulty);
+            // 注意：难度应该从数据库读取，不是从SharedPreferences
+            // activity.difficulty已经在loadGameDataFromDatabase()中从数据库加载了
+            // 这里不需要再从SharedPreferences覆盖难度设置
+            Log.d("GameLoading", "保持从数据库加载的难度: " + activity.difficulty);
             
             activity.firstCollectTime = 0;
             activity.currentEquip = "";
@@ -257,16 +251,10 @@ public class DataManager {
         activity.gold = 0;
         activity.backpackCap = 10;
         
-        // 从SharedPreferences读取正确的难度设置
-        android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
-        String difficultyFromPrefs = sp.getString("difficulty", Constant.DIFFICULTY_NORMAL);
-        
-        // 添加日志用于调试难度设置
-        Log.d("GameLoading", "从SharedPreferences读取的难度: " + difficultyFromPrefs);
-        
-        // 直接使用从SharedPreferences读取的值，确保与TitleActivity中保存的值一致
-        activity.difficulty = difficultyFromPrefs;
-        Log.d("GameLoading", "初始化后设置的难度: " + activity.difficulty);
+        // 注意：难度应该从数据库读取，不是从SharedPreferences
+        // activity.difficulty已经在loadGameDataFromDatabase()中从数据库加载了
+        // 这里不需要再从SharedPreferences覆盖难度设置
+        Log.d("GameLoading", "保持从数据库加载的难度: " + activity.difficulty);
         
         activity.firstCollectTime = 0;
         activity.currentEquip = "";
@@ -408,7 +396,7 @@ public class DataManager {
         try {
             // 从SharedPreferences读取难度设置
             android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
-            String difficultyFromPrefs = sp.getString("difficulty", Constant.DIFFICULTY_NORMAL);
+            String difficultyFromPrefs = sp.getString("difficulty", Constant.DIFFICULTY_EASY);
             
             // 调用接受难度参数的resetUserData方法
             dbHelper.resetUserData(userId, difficultyFromPrefs);
@@ -440,11 +428,20 @@ public class DataManager {
     public void initializeNewUserData(int userId) {
         try {
             // 1. 确保用户数据存在，如果不存在则创建
-            // 从SharedPreferences读取难度设置
+              // 尝试从SharedPreferences读取难度设置
               android.content.SharedPreferences sp = activity.getSharedPreferences("game_settings", android.content.Context.MODE_PRIVATE);
-              String difficultyFromPrefs = sp.getString("difficulty", Constant.DIFFICULTY_NORMAL);
+              String difficultyFromPrefs = sp.getString("difficulty", null); // 改为null，表示没有设置
               
-              Log.d("DataManager", "初始化新用户数据，从SharedPreferences读取的难度: " + difficultyFromPrefs + ", 用户ID: " + userId);
+              // 如果SharedPreferences中没有难度设置，从数据库读取
+              if (difficultyFromPrefs == null) {
+                  Map<String, Object> userStatus = dbHelper.getUserStatus(userId);
+                  difficultyFromPrefs = (String) userStatus.get("difficulty");
+                  if (difficultyFromPrefs == null) {
+                      difficultyFromPrefs = Constant.DIFFICULTY_EASY; // 最后的兜底
+                  }
+              }
+              
+              Log.d("DataManager", "初始化新用户数据，使用的难度: " + difficultyFromPrefs + ", 用户ID: " + userId);
               
               if (!dbHelper.hasUserData(userId)) {
                  // 调用接受难度参数的initUserData方法，确保使用用户选择的难度
@@ -469,9 +466,18 @@ public class DataManager {
             defaultStatus.put("stamina", Constant.INIT_STAMINA);
             defaultStatus.put("gold", 0);
             defaultStatus.put("backpack_cap", 10);
-            // 使用从SharedPreferences读取的难度设置
-            Log.d("GameInit", "初始化新用户数据，从SharedPreferences读取的难度: " + difficultyFromPrefs + ", 用户ID: " + userId);
-            defaultStatus.put("difficulty", difficultyFromPrefs);
+            // 使用优先级：SharedPreferences > 数据库 > 默认简单难度
+            String finalDifficulty = difficultyFromPrefs;
+            if (finalDifficulty == null || finalDifficulty.isEmpty()) {
+                Map<String, Object> userStatus = dbHelper.getUserStatus(userId);
+                finalDifficulty = (String) userStatus.get("difficulty");
+                if (finalDifficulty == null || finalDifficulty.isEmpty()) {
+                    finalDifficulty = Constant.DIFFICULTY_EASY;
+                }
+            }
+            
+            Log.d("GameInit", "初始化新用户数据，最终使用的难度: " + finalDifficulty + ", 用户ID: " + userId);
+            defaultStatus.put("difficulty", finalDifficulty);
             defaultStatus.put("first_collect_time", 0);
             defaultStatus.put("game_hour", Constant.GAME_HOUR_DEFAULT);
             defaultStatus.put("game_day", Constant.GAME_DAY_DEFAULT);

@@ -1,6 +1,7 @@
 package com.example.myapplication3;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -48,9 +49,9 @@ public class DifficultyActivity extends BaseActivity implements View.OnClickList
         Map<String, Object> userStatus = dbHelper.getUserStatus(MyApplication.currentUserId);
         difficulty = (String) userStatus.get("difficulty");
 
-        // 设置默认难度为普通
+        // 设置默认难度为简单
         if (difficulty == null || difficulty.isEmpty()) {
-            difficulty = Constant.DIFFICULTY_NORMAL;
+            difficulty = Constant.DIFFICULTY_EASY;
         }
 
         updateDifficultyDisplay();
@@ -87,7 +88,20 @@ public class DifficultyActivity extends BaseActivity implements View.OnClickList
     private void saveDifficulty() {
         Map<String, Object> updateData = new HashMap<>();
         updateData.put("difficulty", difficulty);
-        dbHelper.updateUserStatus(MyApplication.currentUserId, updateData);
+        Log.d("DifficultyActivity", "准备保存难度: " + difficulty + ", 用户ID: " + MyApplication.currentUserId);
+        
+        // 保存前检查当前数据库中的难度
+        Map<String, Object> currentUserStatus = dbHelper.getUserStatus(MyApplication.currentUserId);
+        String currentDifficulty = (String) currentUserStatus.get("difficulty");
+        Log.d("DifficultyActivity", "保存前数据库中的难度: " + currentDifficulty);
+        
+        boolean success = dbHelper.updateUserStatus(MyApplication.currentUserId, updateData);
+        Log.d("DifficultyActivity", "难度保存结果: " + success);
+        
+        // 保存后验证数据库中的难度
+        Map<String, Object> updatedUserStatus = dbHelper.getUserStatus(MyApplication.currentUserId);
+        String updatedDifficulty = (String) updatedUserStatus.get("difficulty");
+        Log.d("DifficultyActivity", "保存后数据库中的难度: " + updatedDifficulty);
 
         // 提示难度变化影响
         if (difficulty.equals(Constant.DIFFICULTY_HARD)) {
@@ -128,24 +142,24 @@ public class DifficultyActivity extends BaseActivity implements View.OnClickList
             return;
         }
 
-        // 检查普通难度解锁：需要通关简单难度
-        boolean isEasyCleared = dbHelper.isEasyDifficultyCleared(userId);
-        if (!isEasyCleared) {
+        // 检查是否已完成首次轮回
+        boolean hasCompletedFirstReincarnation = dbHelper.hasCompletedAnyReincarnation(userId);
+        
+        // 如果没有完成首次轮回，只能选择简单难度
+        if (!hasCompletedFirstReincarnation) {
             btnNormal.setEnabled(false);
             btnNormal.setAlpha(0.5f);
-            btnNormal.setOnClickListener(v ->
-                    showToast("需先通关简单难度才能解锁普通难度")
-            );
-        }
-
-        // 检查困难难度解锁：需要通关普通难度
-        boolean isNormalCleared = dbHelper.isNormalDifficultyCleared(userId);
-        if (!isNormalCleared) {
             btnHard.setEnabled(false);
             btnHard.setAlpha(0.5f);
-            btnHard.setOnClickListener(v ->
-                    showToast("需先通关普通难度才能解锁困难难度")
+            btnNormal.setOnClickListener(v ->
+                    showToast("需完成首次轮回后才能解锁其他难度")
             );
+            btnHard.setOnClickListener(v ->
+                    showToast("需完成首次轮回后才能解锁其他难度")
+            );
+            Log.d("DifficultyActivity", "用户未完成首次轮回，锁定为简单难度");
+        } else {
+            Log.d("DifficultyActivity", "用户已完成首次轮回，解锁所有难度");
         }
     }
 }

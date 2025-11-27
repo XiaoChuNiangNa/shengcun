@@ -175,22 +175,77 @@
             android:layout_height="0dp"
             android:layout_weight="1"/>
 
-        <!-- 任务显示框按钮（左上角） -->
+        <!-- 任务显示框（左上角） -->
         <FrameLayout
-            android:layout_width="wrap_content"
+            android:layout_width="140dp"
             android:layout_height="wrap_content"
             android:layout_gravity="start|top"
             android:layout_margin="8dp">
             
-            <Button
-                android:id="@+id/btn_quest_panel"
-                android:layout_width="120dp"
-                android:layout_height="40dp"
-                android:text="任务列表"
-                android:textColor="@android:color/white"
-                android:textSize="12sp"
+            <LinearLayout
+                android:id="@+id/quest_panel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:background="@drawable/quest_panel_background"
-                android:gravity="center" />
+                android:orientation="vertical"
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true">
+                
+                <!-- 任务标题 -->
+                <TextView
+                    android:id="@+id/quest_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="任务列表"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+                
+                <!-- 任务内容 -->
+                <TextView
+                    android:id="@+id/quest_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="暂无任务"
+                    android:textColor="@android:color/white"
+                    android:textSize="10sp"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:gravity="center" />
+                
+                <!-- 任务进度状态 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+                    
+                    <TextView
+                        android:id="@+id/quest_progress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="(0/10)"
+                        android:textColor="@color/yellow"
+                        android:textSize="10sp"
+                        android:textStyle="bold" />
+                    
+                    <TextView
+                        android:id="@+id/quest_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="进行中"
+                        android:textColor="@android:color/white"
+                        android:textSize="10sp" />
+                </LinearLayout>
+                
+            </LinearLayout>
             
             <!-- 任务红点提示 -->
             <View
